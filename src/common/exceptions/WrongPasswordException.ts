@@ -1,4 +1,5 @@
 import { IException } from "@/interface"
+import HttpStatusCode from "../utils/http-status-code"
 
 class WrongPasswordException extends Error implements IException {
     statusCode: number
@@ -13,7 +14,7 @@ class WrongPasswordException extends Error implements IException {
     constructor(message: string = "Wrong password") {
         super(message)
         this.name = "WrongPasswordException"
-        this.statusCode = 402
+        this.statusCode = HttpStatusCode.BAD_REQUEST
     }
 }
 

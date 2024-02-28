@@ -1,8 +1,8 @@
-import { IUser } from "@/interface"
+import { ICustomer, IUser } from "@/interface"
 
-export interface RegisterRequest extends Omit<IUser, "isEmailVerified"> {}
+export interface RegisterRequest extends Omit<IUser, "user"> {}
 
-export interface RegisterResponse {
+export type RegisterResponse = {
     accessToken: string
     user: IUser
 }

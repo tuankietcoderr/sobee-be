@@ -1,4 +1,5 @@
 import { IException } from "@/interface"
+import HttpStatusCode from "../utils/http-status-code"
 
 export class UserNotFoundException extends Error implements IException {
     statusCode: number
@@ -12,6 +13,6 @@ export class UserNotFoundException extends Error implements IException {
     constructor(message: string = "User not found") {
         super(message)
         this.name = "UserNotFoundException"
-        this.statusCode = 404
+        this.statusCode = HttpStatusCode.NOT_FOUND
     }
 }

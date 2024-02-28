@@ -1,31 +1,40 @@
-import { Schema, Types, model } from "mongoose"
 import { IUser } from "@/interface"
+import { Schema, model } from "mongoose"
 import { SCHEMA_NAME } from "./schema-name"
+import { ERole } from "@/enum"
 
 const UserSchema = new Schema<IUser>(
     {
+        name: {
+            type: String,
+            required: true
+        },
         avatar: {
             type: String
         },
         email: {
             type: String,
-            required: true
+            required: true,
+            unique: true
         },
-        isEmailVerified: {
-            type: Boolean,
-            default: false
-        },
-        name: {
+        phoneNumber: {
             type: String,
-            required: true
+            required: true,
+            unique: true
+        },
+        dateOfBirth: {
+            type: Date,
+            default: null
         },
         role: {
-            type: Schema.Types.ObjectId,
-            ref: SCHEMA_NAME.ROLES
-        },
-        username: {
             type: String,
+            enum: Object.values(ERole),
             required: true
+        },
+        user: {
+            type: Schema.Types.ObjectId,
+            refPath: "role",
+            default: null
         }
     },
     {

@@ -1,4 +1,5 @@
 import { IException } from "@/interface"
+import HttpStatusCode from "../utils/http-status-code"
 
 class UnauthorizedException extends Error implements IException {
     statusCode: number
@@ -13,7 +14,7 @@ class UnauthorizedException extends Error implements IException {
     constructor(message: string = "Unauthorized") {
         super(message)
         this.name = "UnauthorizedException"
-        this.statusCode = 401
+        this.statusCode = HttpStatusCode.UNAUTHORIZED
     }
 }
 

@@ -1,29 +1,32 @@
 import { IMiddleware } from "@/interface"
-import { User } from "@/models"
 import { NextFunction, Request, Response } from "express"
 import jwt, { JwtPayload } from "jsonwebtoken"
 import { ErrorResponse } from "./utils"
+import User from "@/models/User"
+import HttpStatusCode from "./utils/http-status-code"
 
 class Middleware implements IMiddleware {
     async verifyToken(req: Request, res: Response, next: NextFunction) {
-        const token = req.headers.cookie?.split("accessToken=")[1]?.split(";")[0]
+        const authHeader = req.header("Authorization")
+        const token = authHeader && authHeader.split(" ")[1]
 
         if (!token) {
-            return new ErrorResponse(401, "Access denied. No token provided").from(res)
+            return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "Access denied. No token provided").from(res)
         }
 
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload
 
             req.userId = decoded.userId
+            req.role = decoded.role
 
             const user = await User.findById(decoded.userId)
             if (!user) {
-                return new ErrorResponse(401, "Invalid token").from(res)
+                return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "Invalid token").from(res)
             }
             next()
         } catch {
-            return new ErrorResponse(403, "Invalid token").from(res)
+            return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Invalid token").from(res)
         }
     }
 
@@ -33,7 +36,9 @@ class Middleware implements IMiddleware {
 
             for (const field of fields) {
                 if (body[field]) {
-                    return new ErrorResponse(400, `Field ${String(field)} is not allowed`).from(res)
+                    return new ErrorResponse(HttpStatusCode.BAD_REQUEST, `Field ${String(field)} is not allowed`).from(
+                        res
+                    )
                 }
             }
 
@@ -52,7 +57,9 @@ class Middleware implements IMiddleware {
             }
 
             if (leftFields.length > 0) {
-                return new ErrorResponse(400, `Missing fields: ${leftFields.join(", ")}`).from(res)
+                return new ErrorResponse(HttpStatusCode.BAD_REQUEST, `Missing fields: ${leftFields.join(", ")}`).from(
+                    res
+                )
             }
 
             next()

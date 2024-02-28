@@ -1,10 +1,58 @@
-import { AuthController } from "@/controller"
+import {
+    AddressController,
+    AssetCategoryController,
+    AssetController,
+    AttributeController,
+    AuthController,
+    CategoryController,
+    ChatMessageController,
+    ChatRoomController,
+    CouponController,
+    CustomerController,
+    FavoriteController,
+    NotificationController,
+    OrderController,
+    OrderItemController,
+    PaymentMethodController,
+    PermissionController,
+    ProductAssetAttributeController,
+    ProductController,
+    ReviewController,
+    RoleController,
+    StaffController,
+    UserController
+} from "@/controller"
 import { Express } from "express"
 
 function getRoutes(app: Express) {
-    const authController = new AuthController()
+    const controllers = [
+        new AddressController(),
+        new AssetController(),
+        new AssetCategoryController(),
+        new AttributeController(),
+        new AuthController(),
+        new CategoryController(),
+        new ChatMessageController(),
+        new ChatRoomController(),
+        new CouponController(),
+        new CustomerController(),
+        new FavoriteController(),
+        new NotificationController(),
+        new OrderController(),
+        new OrderItemController(),
+        new PaymentMethodController(),
+        new PermissionController(),
+        new ProductController(),
+        new ProductAssetAttributeController(),
+        new ReviewController(),
+        new RoleController(),
+        new StaffController(),
+        new UserController()
+    ]
 
-    app.use(authController.getPath(), authController.getRouter())
+    controllers.forEach((controller) => {
+        app.use(controller.getPath(), controller.getRouter())
+    })
 }
 
 export default getRoutes

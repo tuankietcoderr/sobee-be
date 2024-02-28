@@ -1,8 +1,8 @@
-import { IUser } from "@/interface"
+import { IAdmin, ICustomer, IStaff } from "@/interface"
 
-export interface MeRequest {
+export type MeRequest = {
     userId: string
 }
-export interface MeResponse {
-    user: IUser
+export type MeResponse = {
+    user: IAdmin | IStaff | ICustomer
 }

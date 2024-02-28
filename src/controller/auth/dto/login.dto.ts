@@ -1,5 +1,5 @@
-export interface LoginRequest {
-    usernameOrEmail: string
+export type LoginRequest = {
+    emailOrPhone: string
     password: string
 }
-export interface LoginResponse {}
+export type LoginResponse = object

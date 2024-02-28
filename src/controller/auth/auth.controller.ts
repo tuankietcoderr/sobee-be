@@ -3,8 +3,9 @@ import middleware from "@/common/middleware"
 import { ErrorResponse, SuccessfulResponse } from "@/common/utils"
 import { IRoute } from "@/interface"
 import { Request, Response, Router } from "express"
-import { AuthService } from "./auth.services"
+import { AuthService } from "./auth.service"
 import { LoginRequest, RegisterRequest } from "./dto"
+import HttpStatusCode from "@/common/utils/http-status-code"
 
 export class AuthController implements IRoute {
     private router: Router
@@ -26,13 +27,13 @@ export class AuthController implements IRoute {
     private initializeRoutes(): void {
         this.router.post(
             this.PATHS.REGISTER,
-            middleware.mustHaveFields<RegisterRequest>("email", "name", "password", "role", "username"),
+            middleware.mustHaveFields<RegisterRequest>("email", "name", "password"),
             this.register
         )
 
         this.router.post(
             this.PATHS.LOGIN,
-            middleware.mustHaveFields<LoginRequest>("usernameOrEmail", "password"),
+            middleware.mustHaveFields<LoginRequest>("emailOrPhone", "password"),
             this.login
         )
 
@@ -42,12 +43,12 @@ export class AuthController implements IRoute {
     private async register(req: Request, res: Response) {
         try {
             const response = await AuthController.authService.register(req.body)
-            new SuccessfulResponse(response, 201, "Register successfully").from(res)
+            new SuccessfulResponse(response, HttpStatusCode.CREATED, "Register successfully").from(res)
         } catch (error: any) {
             if (error instanceof UserAlreadyExistsException) {
                 new ErrorResponse(error.statusCode, error.message).from(res)
             } else {
-                new ErrorResponse(500, error.message).from(res)
+                new ErrorResponse(HttpStatusCode.INTERNAL_SERVER_ERROR, error.message).from(res)
             }
         }
     }
@@ -55,25 +56,25 @@ export class AuthController implements IRoute {
     private async login(req: Request, res: Response) {
         try {
             const response = await AuthController.authService.login(req.body)
-            new SuccessfulResponse(response, 200, "Login successfully").from(res)
+            new SuccessfulResponse(response, HttpStatusCode.OK, "Login successfully").from(res)
         } catch (error: any) {
             if (error instanceof UserNotFoundException || error instanceof WrongPasswordException) {
                 new ErrorResponse(error.statusCode, error.message).from(res)
             } else {
-                new ErrorResponse(500, error.message).from(res)
+                new ErrorResponse(HttpStatusCode.INTERNAL_SERVER_ERROR, error.message).from(res)
             }
         }
     }
 
     private async me(req: Request, res: Response) {
         try {
-            const response = await AuthController.authService.me(req.body)
-            new SuccessfulResponse(response, 200, "Get me successfully").from(res)
+            const response = await AuthController.authService.me({ userId: req.userId })
+            new SuccessfulResponse(response, HttpStatusCode.OK, "Get me successfully").from(res)
         } catch (error: any) {
             if (error instanceof UserNotFoundException) {
                 new ErrorResponse(error.statusCode, error.message).from(res)
             }
-            new ErrorResponse(500, error.message).from(res)
+            new ErrorResponse(HttpStatusCode.INTERNAL_SERVER_ERROR, error.message).from(res)
         }
     }
 

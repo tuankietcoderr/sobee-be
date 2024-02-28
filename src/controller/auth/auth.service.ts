@@ -1,14 +1,20 @@
-import { Credential, User } from "@/models"
+import { Admin, Credential, Customer, Staff, User } from "@/models"
 import { AuthRepository } from "./auth.repository"
 import { LoginRequest, LoginResponse, MeRequest, MeResponse, RegisterRequest, RegisterResponse } from "./dto"
-import { UserAlreadyExistsException, UserNotFoundException, WrongPasswordException } from "@/common/exceptions"
+import {
+    InvalidRoleException,
+    UserAlreadyExistsException,
+    UserNotFoundException,
+    WrongPasswordException
+} from "@/common/exceptions"
 import { comparePassword, generateToken, hashPassword } from "@/common/utils"
+import { ERole } from "@/enum"
 
 export class AuthService implements AuthRepository {
     async register(data: RegisterRequest): Promise<RegisterResponse> {
-        const { email, username, password } = data
+        const { email, phoneNumber, password, role } = data
 
-        const user = await User.findOne({ $or: [{ username }, { email }] })
+        const user = await User.findOne({ $or: [{ phoneNumber }, { email }] })
 
         if (user) {
             throw new UserAlreadyExistsException()
@@ -23,8 +29,23 @@ export class AuthService implements AuthRepository {
             password: hashedPassword
         })
 
-        const accessToken = generateToken({ userId: newUser._id.toHexString() })
+        let objectUser
+        switch (role) {
+            case ERole.ADMIN:
+                objectUser = new Admin()
+                break
+            case ERole.CUSTOMER:
+                objectUser = new Customer()
+                break
+            default:
+                throw new InvalidRoleException()
+        }
 
+        newUser.user = objectUser._id
+
+        const accessToken = generateToken({ userId: newUser._id.toHexString(), role })
+
+        await objectUser.save()
         await newUser.save()
         await newCredential.save()
 
@@ -34,9 +55,9 @@ export class AuthService implements AuthRepository {
         }
     }
     async login(data: LoginRequest): Promise<LoginResponse> {
-        const { usernameOrEmail, password } = data
+        const { emailOrPhone, password } = data
 
-        const user = await User.findOne({ $or: [{ username: usernameOrEmail }, { email: usernameOrEmail }] })
+        const user = await User.findOne({ $or: [{ phoneNumber: emailOrPhone }, { email: emailOrPhone }] })
 
         if (!user) {
             throw new UserNotFoundException()
@@ -54,7 +75,7 @@ export class AuthService implements AuthRepository {
             throw new WrongPasswordException()
         }
 
-        const accessToken = generateToken({ userId: user._id.toHexString() })
+        const accessToken = generateToken({ userId: user._id.toHexString(), role: user.role })
 
         return {
             accessToken,
@@ -64,7 +85,15 @@ export class AuthService implements AuthRepository {
     async me(data: MeRequest): Promise<MeResponse> {
         const { userId } = data
 
-        const user = await User.findById(userId)
+        const user = await User.findById(
+            userId,
+            {},
+            {
+                populate: {
+                    path: "user"
+                }
+            }
+        )
 
         if (!user) {
             throw new UserNotFoundException()

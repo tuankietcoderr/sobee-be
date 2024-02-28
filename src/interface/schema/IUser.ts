@@ -1,12 +1,16 @@
+import { ERole } from "@/enum"
+import { IAdmin } from "./IAdmin"
+import { ICustomer } from "./ICustomer"
+import { IStaff } from "./IStaff"
 import { Types } from "mongoose"
-import { IRole } from "./IRole"
 
-export interface IUser {
-    username: string
-    password?: string
-    role: Types.ObjectId | IRole
-    name: string
-    avatar?: string
+export interface IUser<T = ICustomer | IAdmin | IStaff> {
     email: string
-    isEmailVerified?: boolean
+    phoneNumber: string
+    password?: string
+    name: string
+    avatar: string
+    dateOfBirth: Date
+    role: ERole
+    user: T | Types.ObjectId | string
 }

@@ -1,4 +1,5 @@
 import { IException } from "@/interface"
+import HttpStatusCode from "../utils/http-status-code"
 
 class UserAlreadyExistsException extends Error implements IException {
     statusCode: number
@@ -13,7 +14,7 @@ class UserAlreadyExistsException extends Error implements IException {
     constructor(message: string = "User's already exists") {
         super(message)
         this.name = "UserAlreadyExistsException"
-        this.statusCode = 402
+        this.statusCode = HttpStatusCode.BAD_REQUEST
     }
 }
 

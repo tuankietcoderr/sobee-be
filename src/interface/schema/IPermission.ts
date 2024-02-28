@@ -1,1 +1,3 @@
-export interface IPermission {}
+export interface IPermission {
+    name: string
+}
