@@ -1,5 +1,5 @@
 import { IException } from "@/interface"
-import HttpStatusCode from "../utils/http-status-code"
+import { HttpStatusCode } from "../utils"
 
 class WrongPasswordException extends Error implements IException {
     statusCode: number

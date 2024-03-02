@@ -5,7 +5,7 @@ import { IRoute } from "@/interface"
 import { Request, Response, Router } from "express"
 import { AuthService } from "./auth.service"
 import { LoginRequest, RegisterRequest } from "./dto"
-import HttpStatusCode from "@/common/utils/http-status-code"
+import { HttpStatusCode } from "@/common/utils"
 
 export class AuthController implements IRoute {
     private router: Router

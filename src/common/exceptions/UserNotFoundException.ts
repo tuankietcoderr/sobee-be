@@ -1,5 +1,5 @@
 import { IException } from "@/interface"
-import HttpStatusCode from "../utils/http-status-code"
+import { HttpStatusCode } from "../utils"
 
 export class UserNotFoundException extends Error implements IException {
     statusCode: number

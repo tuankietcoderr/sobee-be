@@ -14,8 +14,7 @@ const RoleSchema = new Schema<IRole>(
                 type: Schema.Types.ObjectId,
                 ref: SCHEMA_NAME.PERMISSIONS
             }
-        ],
-        description: String
+        ]
     },
     {
         versionKey: false

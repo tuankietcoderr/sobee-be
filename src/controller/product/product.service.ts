@@ -1,10 +1,16 @@
 import { IProduct } from "@/interface"
 import { CreateProductRequest } from "./dto"
 import { ProductRepository } from "./product.repository"
+import { CategoryService } from "../category"
+import { Product } from "@/models"
 
 export class ProductService implements ProductRepository {
-    create(req: CreateProductRequest): Promise<IProduct> {
-        throw new Error("Method not implemented.")
+    private readonly categoryService = new CategoryService()
+    async create(req: CreateProductRequest): Promise<IProduct> {
+        const { productAssetAttributes, category } = req
+        const _category = await this.categoryService.getBy("id", category.toString())
+        const product = await Product.create(req)
+        return product
     }
     update(id: string, data: Partial<IProduct>): Promise<IProduct> {
         throw new Error("Method not implemented.")
@@ -15,10 +21,7 @@ export class ProductService implements ProductRepository {
     getAll(): Promise<IProduct[]> {
         throw new Error("Method not implemented.")
     }
-    getById(id: string): Promise<IProduct> {
-        throw new Error("Method not implemented.")
-    }
-    getBySlug(slug: string): Promise<IProduct> {
+    getBy(type: string, id: string): Promise<IProduct[]> {
         throw new Error("Method not implemented.")
     }
     search(query: string): Promise<IProduct[]> {

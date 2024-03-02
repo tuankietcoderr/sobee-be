@@ -1,7 +1,7 @@
 import { IException } from "@/interface"
 import { HttpStatusCode } from "../utils"
 
-class UserAlreadyExistsException extends Error implements IException {
+class ObjectModelOperationException extends Error implements IException {
     statusCode: number
 
     toJSON(): { statusCode: number; message: string } {
@@ -11,11 +11,11 @@ class UserAlreadyExistsException extends Error implements IException {
         }
     }
 
-    constructor(message: string = "User's already exists") {
+    constructor(message: string = "Error performing operation on object model") {
         super(message)
-        this.name = "UserAlreadyExistsException"
+        this.name = "ObjectModelOperationException"
         this.statusCode = HttpStatusCode.BAD_REQUEST
     }
 }
 
-export { UserAlreadyExistsException }
+export { ObjectModelOperationException }

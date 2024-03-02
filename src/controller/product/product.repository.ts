@@ -6,8 +6,7 @@ export abstract class ProductRepository {
     abstract update(id: string, data: Partial<IProduct>): Promise<IProduct>
     abstract delete(id: string): Promise<void>
     abstract getAll(): Promise<Array<IProduct>>
-    abstract getById(id: string): Promise<IProduct>
-    abstract getBySlug(slug: string): Promise<IProduct>
+    abstract getBy(type: string, id: string): Promise<Array<IProduct>>
     abstract search(query: string): Promise<Array<IProduct>>
     abstract getSold(): Promise<Array<IProduct>>
     abstract getDeleted(): Promise<Array<IProduct>>

@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from "express"
 import jwt, { JwtPayload } from "jsonwebtoken"
 import { ErrorResponse } from "./utils"
 import User from "@/models/User"
-import HttpStatusCode from "./utils/http-status-code"
+import { HttpStatusCode } from "./utils"
 
 class Middleware implements IMiddleware {
     async verifyToken(req: Request, res: Response, next: NextFunction) {
@@ -27,6 +27,32 @@ class Middleware implements IMiddleware {
             next()
         } catch {
             return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Invalid token").from(res)
+        }
+    }
+
+    verifyRoles(...roles: string[]) {
+        return (req: Request, res: Response, next: NextFunction) => {
+            if (!req.role) {
+                return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
+            }
+
+            if (!roles.includes(req.role)) {
+                return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
+            }
+
+            next()
+        }
+    }
+
+    verifyParams(...params: string[]) {
+        return (req: Request, res: Response, next: NextFunction) => {
+            for (const param of params) {
+                if (!req.params[param]) {
+                    return new ErrorResponse(HttpStatusCode.BAD_REQUEST, `Missing param: ${param}`).from(res)
+                }
+            }
+
+            next()
         }
     }
 
