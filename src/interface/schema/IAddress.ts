@@ -1,3 +1,6 @@
+import { Types } from "mongoose"
+import { ICustomer } from "./ICustomer"
+
 export interface IAddress {
     country: string
     postalCode: string
@@ -7,4 +10,5 @@ export interface IAddress {
     street: string
     specificAddress: string
     isDefault: boolean
+    customer: string | ICustomer | Types.ObjectId
 }

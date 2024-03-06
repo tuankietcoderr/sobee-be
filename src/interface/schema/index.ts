@@ -1,7 +1,6 @@
 export * from "./IAddress"
 export * from "./IAdmin"
 export * from "./IAsset"
-export * from "./IAssetCategory"
 export * from "./IAttribute"
 export * from "./ICart"
 export * from "./ICategory"

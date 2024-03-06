@@ -1,1 +1,8 @@
-export abstract class AssetRepository {}
+import { IAsset } from "@/interface"
+import { CreateAssetRequest, CreateAssetResponse } from "./dto"
+
+export abstract class AssetRepository {
+    abstract create(req: CreateAssetRequest): Promise<CreateAssetResponse>
+    abstract delete(id: string): Promise<IAsset>
+    abstract getAll(): Promise<IAsset[]>
+}

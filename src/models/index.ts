@@ -1,7 +1,6 @@
 export { default as Address } from "./Address"
 export { default as Admin } from "./Admin"
 export { default as Asset } from "./Asset"
-export { default as AssetCategory } from "./AssetCategory"
 export { default as Attribute } from "./Attribute"
 export { default as Cart } from "./Cart"
 export { default as Category } from "./Category"

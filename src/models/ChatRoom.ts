@@ -13,7 +13,17 @@ const ChatRoomSchema = new Schema<IChatRoom>(
         title: {
             type: String,
             required: true
-        }
+        },
+        createdBy: {
+            type: Schema.Types.ObjectId,
+            ref: SCHEMA_NAME.USERS
+        },
+        users: [
+            {
+                type: Schema.Types.ObjectId,
+                ref: SCHEMA_NAME.USERS
+            }
+        ]
     },
     {
         versionKey: false,

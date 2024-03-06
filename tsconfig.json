@@ -20,6 +20,6 @@
             "@/*": ["*"]
         }
     },
-    "include": ["src/**/*", "views/**/*"],
+    "include": ["src/**/*", "views/**/*", "src/locales/**/*.json"],
     "exclude": ["node_modules", "dist"]
 }

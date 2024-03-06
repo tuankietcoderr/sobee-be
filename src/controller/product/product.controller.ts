@@ -6,6 +6,23 @@ import { HttpStatusCode } from "@/common/utils"
 import middleware from "@/common/middleware"
 import { ERole } from "@/enum"
 
+/**
+ * @swagger
+ * components:
+ *  schemas:
+ *    Product:
+ *      type: object
+ *      required:
+ *          - category
+ *          - name
+ *          - price
+ *          - quantity
+ *      properties:
+ *          _id:
+ *              type: string
+ *              description: The auto-generated id of the product
+ *
+ */
 export class ProductController implements IRoute {
     private readonly router: Router
     private readonly path: string
@@ -72,6 +89,34 @@ export class ProductController implements IRoute {
         this.router.get(this.PATHS.BEST_SELLER, this.getBestSellerProducts)
     }
 
+    /**
+    @swagger
+     * tags:
+     *      name: Product
+     *      description: Product management
+     * /api/product:
+     *      post:
+     *          tags: [Product]
+     *          summary: Create a new product
+     *          description: Create a new product
+     *          security:
+     *             - bearerAuth: []
+     *          requestBody:
+     *              required: true
+     *              content:
+     *                  multipart/form-data:
+     *                      schema:
+     *                          $ref: '#/components/schemas/Product'
+     *          responses:
+     *              201:
+     *                  description: Create product successfully
+     *                  content:
+     *                      application/json:
+     *                          schema:
+     *                              $ref: '#/components/schemas/Product'
+     *              500:
+     *                  description: Internal server error
+     */
     private async createProduct(req: Request, res: Response) {
         try {
             const response = await ProductController.productService.create(req.body)
