@@ -37,6 +37,9 @@ export class AuthService implements AuthRepository {
             case ERole.CUSTOMER:
                 objectUser = new Customer()
                 break
+            case ERole.STAFF:
+                objectUser = new Staff()
+                break
             default:
                 throw new InvalidRoleException()
         }

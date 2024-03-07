@@ -1,7 +1,6 @@
-import { IPermission } from "@/interface"
-import { Types } from "mongoose"
+import { ESTAFF_PERMISSIONS } from "@/common/utils"
 
 export interface IRole {
     name: string
-    permissions: string[] | IPermission[] | Types.ObjectId[]
+    permissions: ESTAFF_PERMISSIONS[]
 }

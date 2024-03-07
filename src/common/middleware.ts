@@ -1,9 +1,9 @@
-import { IMiddleware } from "@/interface"
+import { ERole } from "@/enum"
+import { IMiddleware, IRole, IStaff } from "@/interface"
+import User from "@/models/User"
 import { NextFunction, Request, Response } from "express"
 import jwt, { JwtPayload } from "jsonwebtoken"
-import { ErrorResponse } from "./utils"
-import User from "@/models/User"
-import { HttpStatusCode } from "./utils"
+import { ESTAFF_PERMISSIONS, ErrorResponse, HttpStatusCode } from "./utils"
 
 class Middleware implements IMiddleware {
     async verifyToken(req: Request, res: Response, next: NextFunction) {
@@ -32,6 +32,7 @@ class Middleware implements IMiddleware {
 
     verifyRoles(...roles: string[]) {
         return (req: Request, res: Response, next: NextFunction) => {
+            console.log(req.role)
             if (!req.role) {
                 return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
             }
@@ -86,6 +87,51 @@ class Middleware implements IMiddleware {
                 return new ErrorResponse(HttpStatusCode.BAD_REQUEST, `Missing fields: ${leftFields.join(", ")}`).from(
                     res
                 )
+            }
+
+            next()
+        }
+    }
+
+    verifyStaffPermissions(...permissions: ESTAFF_PERMISSIONS[]) {
+        return async (req: Request, res: Response, next: NextFunction) => {
+            const role = req.role
+            if (!role) {
+                return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
+            }
+
+            if (role === ERole.ADMIN) {
+                return next()
+            }
+
+            const userId = req.userId
+
+            const user = await User.findById(
+                userId,
+                {},
+                {
+                    populate: {
+                        path: "user",
+                        select: "staffRole",
+                        populate: {
+                            path: "staffRole",
+                            select: "permissions"
+                        }
+                    }
+                }
+            )
+            if (!user) {
+                return new ErrorResponse(HttpStatusCode.NOT_FOUND, "User not found").from(res)
+            }
+
+            const staff = user.user as IStaff
+            const staffRole = staff.staffRole as IRole
+            const staffPermissions = staffRole.permissions
+
+            for (const permission of permissions) {
+                if (!staffPermissions.includes(permission)) {
+                    return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
+                }
             }
 
             next()

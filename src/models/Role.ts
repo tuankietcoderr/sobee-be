@@ -1,6 +1,7 @@
 import { IRole } from "@/interface"
 import { Schema, model } from "mongoose"
 import { SCHEMA_NAME } from "./schema-name"
+import { ESTAFF_PERMISSIONS } from "@/common/utils"
 
 const RoleSchema = new Schema<IRole>(
     {
@@ -9,12 +10,10 @@ const RoleSchema = new Schema<IRole>(
             required: true,
             unique: true
         },
-        permissions: [
-            {
-                type: Schema.Types.ObjectId,
-                ref: SCHEMA_NAME.PERMISSIONS
-            }
-        ]
+        permissions: {
+            type: [String],
+            required: true
+        }
     },
     {
         versionKey: false

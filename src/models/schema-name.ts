@@ -20,6 +20,5 @@ export const SCHEMA_NAME = {
     CARTS: "carts",
     COUPONS: "coupons",
     FAVORITES: "favorites",
-    PERMISSIONS: "permissions",
     ROLES: "roles"
 }

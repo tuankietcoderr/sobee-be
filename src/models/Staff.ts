@@ -6,10 +6,9 @@ const StaffSchema = new Schema<IStaff>(
     {
         identityCard: {
             type: String,
-            required: true,
             unique: true
         },
-        role: {
+        staffRole: {
             type: Schema.Types.ObjectId,
             ref: SCHEMA_NAME.ROLES
         }
