@@ -6,6 +6,7 @@ import { Request, Response, Router } from "express"
 import { AuthService } from "./auth.service"
 import { LoginRequest, RegisterRequest } from "./dto"
 import { HttpStatusCode } from "@/common/utils"
+import { RefreshTokenRequest } from "./dto/refreshToken.dto"
 
 export class AuthController implements IRoute {
     private router: Router
@@ -13,6 +14,8 @@ export class AuthController implements IRoute {
     private readonly PATHS = {
         REGISTER: "/register",
         LOGIN: "/login",
+        REFRESH_TOKEN: "/refresh-token",
+        LOG_OUT: "/logout",
         ME: "/me"
     }
 
@@ -36,8 +39,14 @@ export class AuthController implements IRoute {
             middleware.mustHaveFields<LoginRequest>("emailOrPhone", "password"),
             this.login
         )
-
         this.router.get(this.PATHS.ME, middleware.verifyToken, this.me)
+        this.router.post(
+            this.PATHS.REFRESH_TOKEN,
+            middleware.mustHaveFields<RefreshTokenRequest>("refreshToken"),
+            middleware.verifyToken,
+            this.handleRefreshToken
+        )
+        this.router.post(this.PATHS.LOG_OUT, middleware.verifyToken, this.logout)
     }
 
     private async register(req: Request, res: Response) {
@@ -74,6 +83,28 @@ export class AuthController implements IRoute {
             if (error instanceof UserNotFoundException) {
                 new ErrorResponse(error.statusCode, error.message).from(res)
             }
+            new ErrorResponse(HttpStatusCode.INTERNAL_SERVER_ERROR, error.message).from(res)
+        }
+    }
+
+    private async handleRefreshToken(req: Request, res: Response) {
+        try {
+            const response = await AuthController.authService.handleRefreshToken(
+                { userId: req.userId, role: req.role },
+                req.body.refreshToken,
+                req.keyToken
+            )
+            new SuccessfulResponse(response, HttpStatusCode.OK, "Refresh token successfully").from(res)
+        } catch (error: any) {
+            new ErrorResponse(HttpStatusCode.INTERNAL_SERVER_ERROR, error.message).from(res)
+        }
+    }
+
+    private async logout(req: Request, res: Response) {
+        try {
+            const response = await AuthController.authService.logout(req.userId)
+            new SuccessfulResponse(response, HttpStatusCode.OK, "Logout successfully").from(res)
+        } catch (error: any) {
             new ErrorResponse(HttpStatusCode.INTERNAL_SERVER_ERROR, error.message).from(res)
         }
     }

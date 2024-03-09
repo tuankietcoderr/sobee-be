@@ -3,29 +3,55 @@ import { IMiddleware, IRole, IStaff } from "@/interface"
 import User from "@/models/User"
 import { NextFunction, Request, Response } from "express"
 import jwt, { JwtPayload } from "jsonwebtoken"
-import { ESTAFF_PERMISSIONS, ErrorResponse, HttpStatusCode } from "./utils"
+import { ESTAFF_PERMISSIONS, ErrorResponse, HttpStatusCode, verifyToken } from "./utils"
+import KeyTokenService from "./utils/keyToken"
+
+const HEADER = {
+    AUTHORIZATION: "Authorization",
+    CLIENTID: "x-client-id"
+}
 
 class Middleware implements IMiddleware {
     async verifyToken(req: Request, res: Response, next: NextFunction) {
-        const authHeader = req.header("Authorization")
-        const token = authHeader && authHeader.split(" ")[1]
-
-        if (!token) {
-            return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "Access denied. No token provided").from(res)
-        }
-
         try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload
+            // console.log(req.header(HEADER.AUTHORIZATION))
+
+            //check if client id is present in the header
+            const clientId = req.header(HEADER.CLIENTID)
+
+            if (!clientId) return new ErrorResponse(HttpStatusCode.BAD_REQUEST, "Missing client id").from(res)
+
+            //check if the client id is present in the database
+            const keyStore = await KeyTokenService.findbyUserId(clientId)
+            if (!keyStore) return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "Not found keyStore").from(res)
+
+            //check if the token is present in the header
+            const authHeader = req.header(HEADER.AUTHORIZATION)
+            const accessToken = authHeader && authHeader.split(" ")[1]
+
+            if (!accessToken) {
+                return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "Access denied. No token provided").from(res)
+            }
+
+            // const decoded = jwt.verify(accessToken, process.env.JWT_SECRET) as JwtPayload
+            const decoded = verifyToken(accessToken, keyStore.publicKey) as JwtPayload
+
+            //check if the client id in the token is the same as the client id in the header
+            if (clientId !== decoded.userId)
+                return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "Invalid request").from(res)
 
             req.userId = decoded.userId
             req.role = decoded.role
+            req.keyToken = keyStore
 
-            const user = await User.findById(decoded.userId)
+            const user = await User.findById(decoded.userId).lean()
             if (!user) {
                 return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "Invalid token").from(res)
             }
             next()
-        } catch {
+        } catch (err) {
+            console.log(err)
+
             return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Invalid token").from(res)
         }
     }

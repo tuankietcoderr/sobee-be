@@ -9,6 +9,8 @@ import getSocketRoutes from "./routes/socket"
 import { ERole } from "./enum"
 import { verifyToken } from "./common/utils"
 import { JwtPayload } from "jsonwebtoken"
+import { IKeyToken } from "./interface"
+import KeyToken from "./models/KeyToken"
 
 configDotenv()
 
@@ -20,21 +22,21 @@ async function runHttpServer() {
 }
 
 async function runSocketServer() {
-    io.use((socket, next) => {
-        const token = (socket.handshake.query.token as string) ?? ""
-        const role = (socket.handshake.query.role as ERole) ?? ""
+    io.use(async (socket, next) => {
+        const accessToken = (socket.handshake.headers.token as string) ?? ""
+        const clientId = (socket.handshake.headers.client as string) ?? ""
 
-        if (!role) return next()
+        if (!accessToken || !clientId) return next(new Error("Authentication error!"))
 
-        switch (role) {
-            case ERole.CUSTOMER: {
-                const decoded = verifyToken(token) as JwtPayload
-                socket.data.userId = decoded.userId
-                break
-            }
-            default:
-                return next(new Error("Invalid role"))
-        }
+        const keyToken = await KeyToken.findOne({ user: clientId }).lean()
+
+        if (!keyToken) return next(new Error("Authentication error!"))
+
+        const decoded = verifyToken(accessToken, keyToken.publicKey) as JwtPayload
+
+        socket.data.userId = decoded.userId
+        socket.data.role = decoded.role
+        socket.data.keyToken = keyToken as IKeyToken
 
         next()
     })

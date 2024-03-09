@@ -7,8 +7,12 @@ import {
     UserNotFoundException,
     WrongPasswordException
 } from "@/common/exceptions"
-import { comparePassword, generateToken, hashPassword } from "@/common/utils"
+import { comparePassword, createKeyPair, createTokenPair, generateToken, hashPassword } from "@/common/utils"
 import { ERole } from "@/enum"
+import KeyTokenService from "@/common/utils/keyToken"
+import { IKeyToken } from "@/interface/schema"
+import KeyToken from "@/models/KeyToken"
+import { RefreshTokenResponse } from "./dto/refreshToken.dto"
 
 export class AuthService implements AuthRepository {
     async register(data: RegisterRequest): Promise<RegisterResponse> {
@@ -37,23 +41,36 @@ export class AuthService implements AuthRepository {
             case ERole.CUSTOMER:
                 objectUser = new Customer()
                 break
-            case ERole.STAFF:
-                objectUser = new Staff()
-                break
             default:
                 throw new InvalidRoleException()
         }
 
         newUser.user = objectUser._id
 
-        const accessToken = generateToken({ userId: newUser._id.toHexString(), role })
+        // const accessToken = generateToken({ userId: newUser._id.toHexString(), role })
+        const { privateKey, publicKey } = await createKeyPair()
+        const { accessToken, refreshToken } = await createTokenPair(
+            { userId: newUser._id, role },
+            publicKey,
+            privateKey
+        )
 
+        // store the key pair and refresh token to database
+        await KeyTokenService.createKeyToken({
+            userId: newUser._id,
+            publicKey,
+            privateKey,
+            refreshToken
+        })
+
+        // save the user, credential and objectUser to database
         await objectUser.save()
         await newUser.save()
         await newCredential.save()
 
         return {
             accessToken,
+            refreshToken,
             user: newUser
         }
     }
@@ -78,13 +95,28 @@ export class AuthService implements AuthRepository {
             throw new WrongPasswordException()
         }
 
-        const accessToken = generateToken({ userId: user._id.toHexString(), role: user.role })
+        // const accessToken = generateToken({ userId: user._id.toHexString(), role: user.role })
+        const { privateKey, publicKey } = await createKeyPair()
+        const { accessToken, refreshToken } = await createTokenPair(
+            { userId: user._id, role: user.role },
+            publicKey,
+            privateKey
+        )
+
+        await KeyTokenService.createKeyToken({
+            userId: user._id,
+            publicKey,
+            privateKey,
+            refreshToken
+        })
 
         return {
             accessToken,
+            refreshToken,
             user
         }
     }
+
     async me(data: MeRequest): Promise<MeResponse> {
         const { userId } = data
 
@@ -103,5 +135,50 @@ export class AuthService implements AuthRepository {
         }
 
         return { user }
+    }
+
+    async handleRefreshToken(
+        user: { userId: string; role: string },
+        refreshToken: string,
+        keyStore: IKeyToken
+    ): Promise<RefreshTokenResponse> {
+        if (keyStore.refreshTokenUsed.includes(refreshToken)) {
+            //doing something here because the token is already used before
+            KeyTokenService.deleteByUserId(keyStore.user)
+            throw new Error("Token already used")
+        }
+
+        if (refreshToken !== keyStore.refreshToken) {
+            throw new Error("Invalid token")
+        }
+
+        const foundUser = await User.findById(user.userId)
+        if (!foundUser) {
+            throw new Error("User not found")
+        }
+
+        const { accessToken, refreshToken: newRefreshToken } = await createTokenPair(
+            { userId: user.userId, role: user.role },
+            keyStore.publicKey,
+            keyStore.privateKey
+        )
+
+        await KeyToken.updateOne(
+            { refreshToken: refreshToken },
+            {
+                $set: {
+                    refreshToken: newRefreshToken
+                },
+                $push: {
+                    refreshTokenUsed: refreshToken
+                }
+            }
+        )
+
+        return { accessToken, refreshToken: newRefreshToken }
+    }
+
+    async logout(userId: string): Promise<object> {
+        return await KeyTokenService.deleteByUserId(userId)
     }
 }
