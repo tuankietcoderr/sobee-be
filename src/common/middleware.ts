@@ -3,7 +3,7 @@ import { IMiddleware, IRole, IStaff } from "@/interface"
 import User from "@/models/User"
 import { NextFunction, Request, Response } from "express"
 import jwt, { JwtPayload } from "jsonwebtoken"
-import { ESTAFF_PERMISSIONS, ErrorResponse, HttpStatusCode } from "./utils"
+import { ESTAFF_PERMISSIONS, ErrorResponse, HttpStatusCode, verifyToken } from "./utils"
 import KeyTokenService from "./utils/keyToken"
 
 const HEADER = {
@@ -34,7 +34,7 @@ class Middleware implements IMiddleware {
             }
 
             // const decoded = jwt.verify(accessToken, process.env.JWT_SECRET) as JwtPayload
-            const decoded = jwt.verify(accessToken, keyStore.publicKey) as JwtPayload
+            const decoded = verifyToken(accessToken, keyStore.publicKey) as JwtPayload
 
             //check if the client id in the token is the same as the client id in the header
             if (clientId !== decoded.userId)

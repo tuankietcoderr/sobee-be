@@ -1,6 +1,6 @@
 import { Schema, model } from "mongoose"
 import { SCHEMA_NAME } from "./schema-name"
-import { IKeyToken } from "@/interface/schema/IKeyToken"
+import { IKeyToken } from "@/interface/schema"
 
 const KeyTokenSchema = new Schema<IKeyToken>(
     {

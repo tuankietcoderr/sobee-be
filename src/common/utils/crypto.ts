@@ -6,8 +6,8 @@ export const generateToken = (payload: string | object | Buffer) => {
     return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN })
 }
 
-export const verifyToken = (token: string) => {
-    return jwt.verify(token, process.env.JWT_SECRET)
+export const verifyToken = (token: string, secretKey: string) => {
+    return jwt.verify(token, secretKey)
 }
 
 export const hashPassword = async (password: string) => {
@@ -49,9 +49,9 @@ export const createTokenPair = async (
     // return { accessToken, refreshToken }
 }
 
-export const createKeyPair = async () => {
-    const publicKey = await crypto.randomBytes(64).toString("hex")
-    const privateKey = await crypto.randomBytes(64).toString("hex")
+export const createKeyPair = () => {
+    const publicKey = crypto.randomBytes(64).toString("hex")
+    const privateKey = crypto.randomBytes(64).toString("hex")
 
     return { publicKey, privateKey }
 }

@@ -1,6 +1,6 @@
 import "express"
 import { TFunction } from "i18next"
-import { IKeyToken } from "@/interface/schema/IKeyToken"
+import { IKeyToken } from "@/interface/schema"
 
 declare module "express" {
     export interface Request {

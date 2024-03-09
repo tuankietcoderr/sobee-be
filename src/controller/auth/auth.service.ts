@@ -10,7 +10,7 @@ import {
 import { comparePassword, createKeyPair, createTokenPair, generateToken, hashPassword } from "@/common/utils"
 import { ERole } from "@/enum"
 import KeyTokenService from "@/common/utils/keyToken"
-import { IKeyToken } from "@/interface/schema/IKeyToken"
+import { IKeyToken } from "@/interface/schema"
 import KeyToken from "@/models/KeyToken"
 import { RefreshTokenResponse } from "./dto/refreshToken.dto"
 
@@ -157,7 +157,7 @@ export class AuthService implements AuthRepository {
             throw new Error("User not found")
         }
 
-        let { accessToken, refreshToken: newRefreshToken } = await createTokenPair(
+        const { accessToken, refreshToken: newRefreshToken } = await createTokenPair(
             { userId: user.userId, role: user.role },
             keyStore.publicKey,
             keyStore.privateKey
