@@ -17,8 +17,8 @@ class SuccessfulResponse<T> implements IFinalResponse<T> {
         res.status(this.statusCode).json({
             success: this.success,
             statusCode: this.statusCode,
-            data: this.data,
-            message: this.message
+            message: this.message,
+            data: this.data
         })
     }
 }

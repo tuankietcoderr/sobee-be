@@ -20,5 +20,6 @@ export const SCHEMA_NAME = {
     CARTS: "carts",
     COUPONS: "coupons",
     FAVORITES: "favorites",
-    ROLES: "roles"
+    ROLES: "roles",
+    KEYTOKENS: "keyTokens"
 }
