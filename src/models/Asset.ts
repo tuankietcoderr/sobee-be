@@ -1,4 +1,3 @@
-import { EAssetType } from "@/enum"
 import { IAsset } from "@/interface"
 import { Schema, model } from "mongoose"
 import { SCHEMA_NAME } from "./schema-name"
@@ -7,10 +6,8 @@ const AssetSchema = new Schema<IAsset>(
     {
         filename: String,
         size: Number,
-        type: {
-            type: String,
-            enum: Object.values(EAssetType),
-            default: EAssetType.IMAGE
+        mimeType: {
+            type: String
         },
         urlPath: String
     },

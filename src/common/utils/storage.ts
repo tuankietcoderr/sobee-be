@@ -1,4 +1,9 @@
+import { configDotenv } from "dotenv"
 import { Client } from "minio"
+configDotenv()
+
+const BUCKET_NAME = process.env.MINIO_BUCKET_NAME || "test"
+const FIELD_NAME = "file"
 
 class MinioStorage {
     private static _instance: MinioStorage
@@ -38,9 +43,19 @@ class MinioStorage {
         }
     }
 
-    public async uploadFile(bucketName: string, fileName: string, filePath: string) {
+    public async getBuckets() {
         try {
-            await this.minioClient.fPutObject(bucketName, fileName, filePath)
+            return await this.minioClient.listBuckets()
+        } catch (error) {
+            console.log(error)
+            throw new Error("Error getting buckets.")
+        }
+    }
+
+    public async uploadFile(bucketName: string, file: Express.Multer.File, uniqueName: string) {
+        try {
+            await this.createBucket(bucketName)
+            await this.minioClient.putObject(bucketName, uniqueName, file.buffer)
         } catch (error) {
             throw new Error("Error uploading file.")
         }
@@ -61,6 +76,14 @@ class MinioStorage {
             throw new Error("Error removing file.")
         }
     }
+
+    public async removeFiles(bucketName: string, fileNames: string[]) {
+        try {
+            await this.minioClient.removeObjects(bucketName, fileNames)
+        } catch (error) {
+            throw new Error("Error removing files.")
+        }
+    }
 }
 
-export { MinioStorage }
+export { MinioStorage, BUCKET_NAME, FIELD_NAME }
