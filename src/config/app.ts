@@ -63,7 +63,7 @@ const specs = swaggerJsdoc({
 })
 
 const app = express()
-const allowOrigins = process.env.ALLOWED_ORIGIN?.trim()?.split(",") ?? "*"
+const allowOrigins = "*"
 app.use(
     cors({
         origin: allowOrigins,

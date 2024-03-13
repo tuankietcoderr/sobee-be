@@ -83,6 +83,18 @@ class Middleware implements IMiddleware {
         }
     }
 
+    verifyQuery(...queries: string[]) {
+        return (req: Request, res: Response, next: NextFunction) => {
+            for (const query of queries) {
+                if (!req.query[query]) {
+                    return new ErrorResponse(HttpStatusCode.BAD_REQUEST, `Missing query: ${query}`).from(res)
+                }
+            }
+
+            next()
+        }
+    }
+
     doNotAllowFields<T = string>(...fields: (keyof T)[]) {
         return (req: Request, res: Response, next: NextFunction) => {
             const body = req.body
