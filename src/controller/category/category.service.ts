@@ -9,11 +9,8 @@ export class CategoryService implements CategoryRepository {
     private readonly assetService = new AssetService()
 
     async create(req: CreateCategoryRequest): Promise<CreateCategoryResponse> {
-        const { parentId, image } = req
-        if (parentId) {
-            const parent = await Category.findById(parentId)
-            if (!parent) throw new ObjectModelNotFoundException("Parent category not found")
-        }
+        const { image } = req
+
         return await Category.create(req)
     }
     async update(id: string, data: Partial<ICategory>): Promise<ICategory> {
