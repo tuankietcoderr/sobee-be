@@ -7,7 +7,7 @@ import {
     UserNotFoundException,
     WrongPasswordException
 } from "@/common/exceptions"
-import { comparePassword, createKeyPair, createTokenPair, generateToken, hashPassword } from "@/common/utils"
+import { comparePassword, createKeyPair, createTokenPair, hashPassword } from "@/common/utils"
 import { ERole } from "@/enum"
 import KeyTokenService from "@/common/utils/keyToken"
 import { IKeyToken } from "@/interface/schema"
@@ -47,7 +47,6 @@ export class AuthService implements AuthRepository {
 
         newUser.user = objectUser._id
 
-        // const accessToken = generateToken({ userId: newUser._id.toHexString(), role })
         const { privateKey, publicKey } = await createKeyPair()
         const { accessToken, refreshToken } = await createTokenPair(
             { userId: newUser._id, role },
@@ -95,7 +94,6 @@ export class AuthService implements AuthRepository {
             throw new WrongPasswordException()
         }
 
-        // const accessToken = generateToken({ userId: user._id.toHexString(), role: user.role })
         const { privateKey, publicKey } = await createKeyPair()
         const { accessToken, refreshToken } = await createTokenPair(
             { userId: user._id, role: user.role },

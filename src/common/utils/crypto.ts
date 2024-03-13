@@ -2,10 +2,6 @@ import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs"
 import crypto from "crypto"
 
-export const generateToken = (payload: string | object | Buffer) => {
-    return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN })
-}
-
 export const verifyToken = (token: string, secretKey: string) => {
     return jwt.verify(token, secretKey)
 }
