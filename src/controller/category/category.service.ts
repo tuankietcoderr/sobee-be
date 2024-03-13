@@ -1,37 +1,47 @@
 import { ICategory } from "@/interface"
 import { CategoryRepository } from "./category.repository"
 import { CreateCategoryRequest, CreateCategoryResponse } from "./dto"
-import { Category } from "@/models"
+import { Category, Product } from "@/models"
 import { ObjectModelNotFoundException, ObjectModelOperationException } from "@/common/exceptions"
+import { AssetService } from "../asset"
 
 export class CategoryService implements CategoryRepository {
+    private readonly assetService = new AssetService()
+
     async create(req: CreateCategoryRequest): Promise<CreateCategoryResponse> {
-        const category = await Category.create(req)
-        if (!category) throw new ObjectModelOperationException()
+        const { parentId, image } = req
+        if (parentId) {
+            const parent = await Category.findById(parentId)
+            if (!parent) throw new ObjectModelNotFoundException("Parent category not found")
+        }
+        return await Category.create(req)
+    }
+    async update(id: string, data: Partial<ICategory>): Promise<ICategory> {
+        const category = await Category.findByIdAndUpdate(
+            id,
+            {
+                $set: data
+            },
+            { new: true }
+        )
+        if (!category) throw new ObjectModelOperationException("Category not found")
         return category
     }
-    update(id: string, data: Partial<ICategory>): Promise<ICategory> {
-        throw new Error("Method not implemented.")
+    async delete(id: string): Promise<ICategory> {
+        const category = await Category.findByIdAndDelete(id)
+        if (!category) throw new ObjectModelOperationException("Category not found")
+        return category
     }
-    delete(id: string): Promise<ICategory> {
-        throw new Error("Method not implemented.")
-    }
-    getAll(): Promise<Array<ICategory>> {
-        throw new Error("Method not implemented.")
+    async getAll(): Promise<Array<ICategory>> {
+        return await Category.find()
     }
     async getBy(type: "id" | "slug", id: string): Promise<ICategory> {
-        let data: ICategory | null
-        switch (type) {
-            case "id":
-                data = await Category.findById(id)
-                break
-            case "slug":
-                data = await Category.findOne({ slug: id })
-                break
-            default:
-                throw new ObjectModelNotFoundException()
-        }
+        const data = await Category.findOne({ [type]: id })
         if (!data) throw new ObjectModelNotFoundException()
         return data
+    }
+
+    async getProducts(id: string): Promise<ICategory[]> {
+        return await Product.find({ category: id })
     }
 }
