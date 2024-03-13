@@ -1,4 +1,4 @@
-import { IRoute } from "@/interface"
+import { ICoupon, IRoute } from "@/interface"
 import { CouponService } from "./coupon.service"
 import { Request, Response, Router } from "express"
 import { ESTAFF_PERMISSIONS, ErrorResponse, HttpStatusCode, SuccessfulResponse } from "@/common/utils"
@@ -13,7 +13,7 @@ export class CouponController implements IRoute {
         ROOT: "/",
         COUPON: "/:couponId",
         USER: "/user",
-        USE: "/use/:couponId"
+        USE: "/:couponId/use"
     }
 
     private static readonly couponService = new CouponService()
@@ -30,6 +30,8 @@ export class CouponController implements IRoute {
             middleware.verifyToken,
             middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
             middleware.verifyStaffPermissions(ESTAFF_PERMISSIONS.CREATE_COUPON),
+            middleware.mustHaveFields<ICoupon>("code", "discountValue", "startDate", "endDate", "usageLimit"),
+            middleware.doNotAllowFields<ICoupon>("customerUsed", "status", "usageCount"),
             this.createCoupon
         )
         this.router.put(
@@ -54,7 +56,6 @@ export class CouponController implements IRoute {
 
     private async createCoupon(req: Request, res: Response): Promise<void> {
         try {
-            console.log(req.headers)
             const data = await CouponController.couponService.create(req.body)
             new SuccessfulResponse(data, HttpStatusCode.CREATED, "Coupon created successfully").from(res)
         } catch (error: any) {

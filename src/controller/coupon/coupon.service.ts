@@ -6,7 +6,10 @@ import { ECouponStatus } from "@/enum"
 
 export class CouponService implements CouponRepository {
     async create(data: ICoupon): Promise<ICoupon> {
-        const { startDate, endDate, discountValue } = data
+        const { startDate, endDate, discountValue, code } = data
+
+        if (startDate < new Date()) throw new Error("Start date cannot be in the past")
+
         if (startDate > endDate) throw new Error("Start date cannot be greater than end date")
 
         if (discountValue < 0) throw new Error("Discount value cannot be negative")
