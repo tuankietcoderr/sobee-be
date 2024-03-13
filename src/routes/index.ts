@@ -1,6 +1,5 @@
 import {
     AddressController,
-    AssetCategoryController,
     AssetController,
     AttributeController,
     AuthController,
@@ -28,7 +27,6 @@ function getRoutes(app: Express) {
     const controllers = [
         new AddressController(),
         new AssetController(),
-        new AssetCategoryController(),
         new AttributeController(),
         new AuthController(),
         new CategoryController(),
