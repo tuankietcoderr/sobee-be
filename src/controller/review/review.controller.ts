@@ -49,7 +49,12 @@ export class ReviewController implements IRoute {
 
     private async updateReview(req: Request, res: Response): Promise<void> {
         try {
-            const data = await ReviewController.reviewService.updateReview(req.params.reviewId, req.body)
+            const data = await ReviewController.reviewService.updateReview(
+                req.params.reviewId,
+                req.body,
+                req.userId,
+                req.role
+            )
             new SuccessfulResponse(data, HttpStatusCode.OK, "Review updated successfully").from(res)
         } catch (error: any) {
             new ErrorResponse(HttpStatusCode.BAD_REQUEST, error.message).from(res)

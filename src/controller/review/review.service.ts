@@ -10,10 +10,13 @@ export class ReviewService implements ReviewRepository {
         return await Review.create(data)
     }
 
-    async updateReview(reviewId: string, data: Partial<IReview>): Promise<IReview> {
+    async updateReview(reviewId: string, data: Partial<IReview>, requestId: string, role: string): Promise<IReview> {
         const foundReview = await Review.findByIdAndUpdate(reviewId, { $set: data }, { new: true }).lean()
 
         if (!foundReview) throw new ObjectModelNotFoundException("Review not found")
+
+        if (foundReview.customer !== requestId || role !== ERole.ADMIN)
+            throw new UnauthorizedException("You are not authorized to update this review")
 
         return foundReview
     }
