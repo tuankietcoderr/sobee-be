@@ -11,7 +11,8 @@ export class AddressController implements IRoute {
     private readonly PATHS = {
         ROOT: "/",
         ADDRESS: "/:id",
-        CUSTOMER: "/customer/:customerId"
+        CUSTOMER: "/customer/:customerId",
+        DEFAULT: "/set-default"
     }
 
     private static readonly addressService = new AddressService()
@@ -42,6 +43,7 @@ export class AddressController implements IRoute {
         this.router.put(this.PATHS.ADDRESS, this.updateAddress)
         this.router.delete(this.PATHS.ADDRESS, this.deleteAddress)
         this.router.get(this.PATHS.CUSTOMER, this.getCustomerAddresses)
+        this.router.post(this.PATHS.DEFAULT, middleware.mustHaveFields("addressId"), this.setDefaultAddress)
     }
 
     getPath(): string {
@@ -87,6 +89,19 @@ export class AddressController implements IRoute {
                 req.role
             )
             new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
+        } catch (error: any) {
+            new ErrorResponse(HttpStatusCode.BAD_REQUEST, error.message).from(res)
+        }
+    }
+
+    private async setDefaultAddress(req: Request, res: Response): Promise<void> {
+        try {
+            const data = await AddressController.addressService.setDefaultAddress(
+                req.body.addressId,
+                req.userId,
+                req.role
+            )
+            new SuccessfulResponse(data, HttpStatusCode.OK, "Address set as default successfully").from(res)
         } catch (error: any) {
             new ErrorResponse(HttpStatusCode.BAD_REQUEST, error.message).from(res)
         }
