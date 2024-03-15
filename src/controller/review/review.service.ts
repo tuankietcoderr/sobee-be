@@ -15,7 +15,7 @@ export class ReviewService implements ReviewRepository {
 
         if (!foundReview) throw new ObjectModelNotFoundException("Review not found")
 
-        if (foundReview.customer !== requestId || role !== ERole.ADMIN)
+        if (foundReview.customer.toString() !== requestId || role !== ERole.ADMIN)
             throw new UnauthorizedException("You are not authorized to update this review")
 
         return foundReview
@@ -49,7 +49,7 @@ export class ReviewService implements ReviewRepository {
 
         if (!foundReview) throw new ObjectModelNotFoundException("Review not found")
 
-        if (foundReview.customer !== requestId && role === ERole.CUSTOMER)
+        if (foundReview.customer.toString() !== requestId && role === ERole.CUSTOMER)
             throw new UnauthorizedException("You are not authorized to delete this review")
 
         const deleted = await foundReview.deleteOne()
