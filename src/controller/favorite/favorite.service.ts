@@ -62,13 +62,9 @@ export class FavoriteService implements FavoriteRepository {
         if (!favorite) throw new ObjectModelNotFoundException("Favorite not found")
 
         Promise.all(
-            favorite.products.map(async (productId) => {
-                const product = await Product.findOne({ _id: productId })
-                if (product) {
-                    product.favoritesCount -= 1
-                    await product.save()
-                }
-            })
+            favorite.products.map(
+                async (productId: any) => await Product.findByIdAndUpdate(productId, { $inc: { favoritesCount: -1 } })
+            )
         )
 
         //remove all products from the favorite list
