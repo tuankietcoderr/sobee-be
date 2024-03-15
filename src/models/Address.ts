@@ -14,7 +14,12 @@ const AddressSchema = new Schema<IAddress>(
         postalCode: String,
         specificAddress: String,
         street: String,
-        ward: String
+        ward: String,
+        customer: {
+            type: Schema.Types.ObjectId,
+            ref: SCHEMA_NAME.CUSTOMERS,
+            required: true
+        }
     },
     {
         versionKey: false,
