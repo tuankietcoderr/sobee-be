@@ -4,5 +4,5 @@ import { IProduct } from "./IProduct"
 
 export interface IFavorite {
     customer: string | Types.ObjectId | ICustomer
-    product: string | Types.ObjectId | IProduct
+    products: string[] | Types.ObjectId[] | IProduct[]
 }

@@ -34,6 +34,10 @@ const ProductSchema = new Schema<IProduct>(
             type: Number,
             required: true
         },
+        favoritesCount: {
+            type: Number,
+            default: 0
+        },
         productAssetAttributes: [
             {
                 ref: SCHEMA_NAME.PRODUCT_ASSET_ATTRIBUTES,
