@@ -13,6 +13,7 @@ export interface IProduct {
     quantity: number
     sold: number
     status: EProductStatus
+    favoritesCount: number
     productAssetAttributes: string[] | Types.ObjectId[] | IProductAssetAttribute[]
     isFeatured: boolean
     deletedAt: Date

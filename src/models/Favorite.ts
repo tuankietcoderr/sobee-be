@@ -6,12 +6,14 @@ const FavoriteSchema = new Schema<IFavorite>(
     {
         customer: {
             type: Schema.Types.ObjectId,
-            ref: SCHEMA_NAME.CUSTOMERS
+            ref: SCHEMA_NAME.USERS
         },
-        product: {
-            type: Schema.Types.ObjectId,
-            ref: SCHEMA_NAME.PRODUCTS
-        }
+        products: [
+            {
+                type: Schema.Types.ObjectId,
+                ref: SCHEMA_NAME.PRODUCTS
+            }
+        ]
     },
     {
         versionKey: false,

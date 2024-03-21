@@ -8,7 +8,7 @@ export class AttributeService implements AttributeRepository {
         return await Attribute.create(req)
     }
     async update(id: string, data: Partial<IAttribute>): Promise<IAttribute> {
-        const updated = await Attribute.findByIdAndUpdate(id, { $set: data })
+        const updated = await Attribute.findByIdAndUpdate(id, { $set: data }, { new: true })
         if (!updated) throw new ObjectModelNotFoundException()
         return updated
     }

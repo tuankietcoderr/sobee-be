@@ -15,7 +15,7 @@ const ReviewSchema = new Schema<IReview>(
             type: String
         },
         customer: {
-            ref: SCHEMA_NAME.CUSTOMERS,
+            ref: SCHEMA_NAME.USERS,
             type: Schema.Types.ObjectId
         },
         product: {
