@@ -1,7 +1,7 @@
 import { ICategory } from "@/interface"
 import { CategoryRepository } from "./category.repository"
 import { CreateCategoryRequest, CreateCategoryResponse } from "./dto"
-import { Category, Product } from "@/models"
+import { Asset, Category, Product } from "@/models"
 import { ObjectModelNotFoundException, ObjectModelOperationException } from "@/common/exceptions"
 import { AssetService } from "../asset"
 
@@ -10,6 +10,10 @@ export class CategoryService implements CategoryRepository {
 
     async create(req: CreateCategoryRequest): Promise<CreateCategoryResponse> {
         const { image } = req
+
+        const asset = await Asset.findById(image)
+
+        if (!asset) throw new ObjectModelNotFoundException("Asset not found")
 
         return await Category.create(req)
     }
