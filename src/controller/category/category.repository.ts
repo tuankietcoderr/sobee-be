@@ -7,4 +7,5 @@ export abstract class CategoryRepository {
     abstract delete(id: string): Promise<ICategory>
     abstract getAll(): Promise<Array<ICategory>>
     abstract getBy(type: "id" | "slug", id: string): Promise<ICategory>
+    abstract getProducts(id: string): Promise<Array<ICategory>>
 }
