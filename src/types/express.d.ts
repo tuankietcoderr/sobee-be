@@ -7,6 +7,7 @@ declare module "express" {
         userId: string
         role: string
         keyToken: IKeyToken
+        permission: boolean
         t: TFunction<"translation", undefined>
     }
 }

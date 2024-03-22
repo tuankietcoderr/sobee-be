@@ -3,6 +3,8 @@ import { ReviewService } from "./review.service"
 import { Request, Response, Router } from "express"
 import { ErrorResponse, HttpStatusCode, SuccessfulResponse } from "@/common/utils"
 import middleware from "@/common/middleware"
+import { EActionPermissions, EResourcePermissions } from "@/common/utils/rbac"
+import { Review } from "@/models"
 
 export class ReviewController implements IRoute {
     private readonly router: Router
@@ -35,7 +37,12 @@ export class ReviewController implements IRoute {
         this.router.get(this.PATHS.REVIEW, this.getReviewsById)
         this.router.get(this.PATHS.PRODUCT, this.getReviewsByProductId)
         this.router.get(this.PATHS.CUSTOMER, this.getReviewsByCustomerId)
-        this.router.delete(this.PATHS.REVIEW, this.deleteReviewById)
+        this.router.delete(
+            this.PATHS.REVIEW,
+            middleware.grandAccess(EActionPermissions.DELETEOWN, EResourcePermissions.REVIEW),
+            middleware.veryfyOwner<IReview>("customer", Review, "reviewId"),
+            this.deleteReviewById
+        )
     }
 
     private async createReview(req: Request, res: Response): Promise<void> {
