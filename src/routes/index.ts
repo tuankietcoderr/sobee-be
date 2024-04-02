@@ -1,3 +1,4 @@
+import { asyncHandler, errorHandlerMiddleware } from "@/common/utils"
 import {
     AddressController,
     AssetController,
@@ -49,8 +50,9 @@ function getRoutes(app: Express) {
     ]
 
     controllers.forEach((controller) => {
-        app.use(controller.getPath(), controller.getRouter())
+        app.use(controller.getPath(), asyncHandler(controller.getRouter()))
     })
+    app.use(errorHandlerMiddleware)
 }
 
 export default getRoutes

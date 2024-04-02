@@ -1,6 +1,7 @@
 import { IRoute } from "@/interface"
 import { Request, Response, Router } from "express"
 import { NotificationService } from "./notification.service"
+import { asyncHandler } from "@/common/utils"
 
 export class NotificationController implements IRoute {
     private router: Router
@@ -16,16 +17,12 @@ export class NotificationController implements IRoute {
     }
 
     private initializeRoutes(): void {
-        this.router.post("/push", this.push)
+        this.router.post("/push", asyncHandler(this.push))
     }
 
     private async push(req: Request, res: Response) {
-        try {
-            await NotificationController.notificationService.push(req.body)
-            res.status(200).send("Push notification successfully")
-        } catch (error: any) {
-            res.status(500).send(error.message)
-        }
+        await NotificationController.notificationService.push(req.body)
+        res.status(200).send("Push notification successfully")
     }
 
     getPath(): string {
