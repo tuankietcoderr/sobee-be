@@ -1,41 +1,84 @@
-import { IPermission, IRole } from "@/interface"
+import { IGrantListItem, IRole } from "@/interface"
 import { RoleRepository } from "./role.repository"
 import { Role } from "@/models"
 import { ObjectModelOperationException } from "@/common/exceptions"
 
 export class RoleService implements RoleRepository {
-    async create(req: IPermission): Promise<IPermission> {
-        const foundRole = await Role.find({ role: req.role, resource: req.resource, action: req.action }).lean()
-        if (foundRole.length > 0) throw new ObjectModelOperationException("Role already exists")
+    async create(req: IRole): Promise<IRole> {
         return await Role.create(req)
     }
-    async getAll(): Promise<IPermission[]> {
-        return await Role.find({}, { _id: 0 }).lean()
+    async update(req: IRole): Promise<Partial<IRole>> {
+        const role = await Role.findOne({ role_name: req.role_name })
+
+        if (!role) {
+            throw new ObjectModelOperationException("Role not found")
+        }
+        const newGrantList = req.grant_lists
+        newGrantList.forEach((newGrant) => {
+            const existingGrantIndex = role.grant_lists.findIndex((grant) => grant.resource === newGrant.resource)
+            if (existingGrantIndex !== -1) {
+                role.grant_lists[existingGrantIndex].actions = newGrant.actions
+            } else {
+                role.grant_lists.push(newGrant)
+            }
+        })
+        await role.save()
+        return role
     }
-    async getListRoleName(): Promise<string[]> {
-        const roleName = await Role.aggregate([
+    async getAll(): Promise<IRole[]> {
+        return await Role.find()
+    }
+    async getOne(role_name: string): Promise<IRole> {
+        const role = await Role.findOne({ role_name })
+        if (!role) {
+            throw new ObjectModelOperationException("Role not found")
+        }
+        return role
+    }
+
+    async deleteResource(role_name: string, resource: string[]): Promise<IRole> {
+        const role = await Role.findOne({ role_name })
+        if (!role) {
+            throw new ObjectModelOperationException("Role not found")
+        }
+        role.grant_lists = role.grant_lists.filter((grant) => !resource.includes(grant.resource))
+        await role.save()
+        return role
+    }
+    async delete(id: string): Promise<void> {
+        const role = await Role.findOne({ _id: id })
+        if (!role) {
+            throw new ObjectModelOperationException("Role not found")
+        }
+        await role.deleteOne()
+    }
+
+    async getAllListRoles(): Promise<IGrantListItem[]> {
+        const role = await Role.aggregate([
+            {
+                $unwind: "$grant_lists"
+            },
             {
                 $project: {
-                    role: 1,
-                    _id: 0
+                    role: "$role_name",
+                    resource: "$grant_lists.resource",
+                    action: "$grant_lists.actions",
+                    attributes: "$grant_lists.attributes"
                 }
             },
             {
-                $group: {
-                    _id: null,
-                    roles: {
-                        $addToSet: "$role"
-                    }
-                }
+                $unwind: "$action"
             },
             {
                 $project: {
                     _id: 0,
-                    roles: 1
+                    role: 1,
+                    resource: 1,
+                    action: 1,
+                    attributes: 1
                 }
             }
         ])
-
-        return roleName.length > 0 ? roleName[0].roles : []
+        return role
     }
 }

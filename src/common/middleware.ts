@@ -1,13 +1,13 @@
 import { ERole } from "@/enum"
-import { IMiddleware, IRole, IStaff } from "@/interface"
+import { IMiddleware } from "@/interface"
 import User from "@/models/User"
 import { NextFunction, Request, Response } from "express"
 import jwt, { JwtPayload } from "jsonwebtoken"
 import { ESTAFF_PERMISSIONS, ErrorResponse, HttpStatusCode, verifyToken } from "./utils"
 import KeyTokenService from "./utils/keyToken"
 import { EActionPermissions, ac } from "./utils/rbac"
-import { Role } from "@/models"
 import { Model } from "mongoose"
+import { RoleService } from "@/controller"
 
 const HEADER = {
     AUTHORIZATION: "Authorization",
@@ -136,44 +136,44 @@ class Middleware implements IMiddleware {
 
     verifyStaffPermissions(...permissions: ESTAFF_PERMISSIONS[]) {
         return async (req: Request, res: Response, next: NextFunction) => {
-            const role = req.role
-            if (!role) {
-                return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
-            }
+            // const role = req.role
+            // if (!role) {
+            //     return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
+            // }
 
-            if (role === ERole.ADMIN) {
-                return next()
-            }
+            // if (role === ERole.ADMIN) {
+            //     return next()
+            // }
 
-            const userId = req.userId
+            // const userId = req.userId
 
-            const user = await User.findById(
-                userId,
-                {},
-                {
-                    populate: {
-                        path: "user",
-                        select: "staffRole",
-                        populate: {
-                            path: "staffRole",
-                            select: "permissions"
-                        }
-                    }
-                }
-            )
-            if (!user) {
-                return new ErrorResponse(HttpStatusCode.NOT_FOUND, "User not found").from(res)
-            }
+            // const user = await User.findById(
+            //     userId,
+            //     {},
+            //     {
+            //         populate: {
+            //             path: "user",
+            //             select: "staffRole",
+            //             populate: {
+            //                 path: "staffRole",
+            //                 select: "permissions"
+            //             }
+            //         }
+            //     }
+            // )
+            // if (!user) {
+            //     return new ErrorResponse(HttpStatusCode.NOT_FOUND, "User not found").from(res)
+            // }
 
-            const staff = user.user as IStaff
-            const staffRole = staff.staffRole as IRole
-            const staffPermissions = staffRole.permissions
+            // const staff = user.user as IStaff
+            // const staffRole = staff.staffRole as IRole
+            // const staffPermissions = staffRole.permissions
 
-            for (const permission of permissions) {
-                if (!staffPermissions.includes(permission)) {
-                    return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
-                }
-            }
+            // for (const permission of permissions) {
+            //     if (!staffPermissions.includes(permission)) {
+            //         return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
+            //     }
+            // }
 
             next()
         }
@@ -193,7 +193,8 @@ class Middleware implements IMiddleware {
                 return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
             }
             //query the database to get all the roles and their permissions
-            const listRoles = await Role.find({}, { _id: 0 }).lean()
+
+            const listRoles = await new RoleService().getAllListRoles()
 
             //set the roles and their permissions to the access control
             ac.setGrants(listRoles)

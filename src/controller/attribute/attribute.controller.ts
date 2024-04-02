@@ -1,7 +1,7 @@
 import { IAttribute, IRoute } from "@/interface"
 import { AttributeService } from "./attribute.service"
 import { Request, Response, Router } from "express"
-import { ESTAFF_PERMISSIONS, ErrorResponse, HttpStatusCode, SuccessfulResponse } from "@/common/utils"
+import { ErrorResponse, HttpStatusCode, SuccessfulResponse } from "@/common/utils"
 import middleware from "@/common/middleware"
 import { ERole } from "@/enum"
 
@@ -27,7 +27,6 @@ export class AttributeController implements IRoute {
             this.PATHS.ROOT,
             middleware.verifyToken,
             middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
-            middleware.verifyStaffPermissions(ESTAFF_PERMISSIONS.CREATE_ATTRIBUTE),
             middleware.mustHaveFields<IAttribute>("name", "description"),
             this.createAttribute
         )
@@ -35,14 +34,12 @@ export class AttributeController implements IRoute {
             this.PATHS.ATTRIBUTE,
             middleware.verifyToken,
             middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
-            middleware.verifyStaffPermissions(ESTAFF_PERMISSIONS.UPDATE_ATTRIBUTE),
             this.updateAttribute
         )
         this.router.delete(
             this.PATHS.ATTRIBUTE,
             middleware.verifyToken,
             middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
-            middleware.verifyStaffPermissions(ESTAFF_PERMISSIONS.DELETE_ATTRIBUTE),
             this.deleteAttribute
         )
         this.router.get(this.PATHS.ROOT, this.getAllAttribute)

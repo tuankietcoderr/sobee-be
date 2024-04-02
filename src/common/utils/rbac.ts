@@ -3,6 +3,16 @@ import { AccessControl } from "accesscontrol"
 
 export const ac = new AccessControl()
 
+// const grantList = [
+//     {role: 'admin', resource:'profile', action:'update:any', attributes:'*'},
+//     {role: 'admin', resource:'balance', action:'update:any', attributes:'*, !mount'},
+
+//     {role: 'shop', resource:'profile', action:'update:own', attributes:'*'},
+//     {role: 'shop', resource:'balance', action:'update:own', attributes:'*, !mount'},
+
+//     {role: 'user', resource:'profile', action:'update:own', attributes:'*'},
+//     {role: 'user', resource:'balance', action:'update:own', attributes:'*'}
+// ]
 export enum EActionPermissions {
     CREATE = "create",
     CREATEANY = "createAny",
@@ -35,10 +45,15 @@ export enum ERolePermissions {
 
 export enum EResourcePermissions {
     REVIEW = "REVIEW",
+    FAVORITE = "FAVORITE",
     PRODUCT = "PRODUCT",
+    COUPON = "COUPON",
+    ADDRESS = "ADDRESS",
+    PRODUCT_ASSET_ATTRIBUTE = "PRODUCT_ASSET_ATTRIBUTE",
     CATEGORY = "CATEGORY",
     ATTRIBUTE = "ATTRIBUTE",
-    ASSET = "ASSET"
+    ASSET = "ASSET",
+    MESSAGE = "MESSAGE"
 }
 
 export const EResourceToModel = {

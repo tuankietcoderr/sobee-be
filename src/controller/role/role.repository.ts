@@ -1,7 +1,7 @@
-import { IPermission, IRole } from "@/interface"
+import { IRole } from "@/interface"
 import { CreateRoleRequest, CreateRoleResponse } from "./dto"
 
 export abstract class RoleRepository {
-    abstract create(req: IPermission): Promise<IPermission>
-    abstract getAll(): Promise<Array<IPermission>>
+    abstract create(req: IRole): Promise<IRole>
+    abstract getAll(): Promise<Array<IRole>>
 }
