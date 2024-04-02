@@ -1,7 +1,7 @@
 import { IRoute } from "@/interface"
 import { StaffService } from "./staff.service"
 import { Request, Response, Router } from "express"
-import { ESTAFF_PERMISSIONS, ErrorResponse, HttpStatusCode, SuccessfulResponse } from "@/common/utils"
+import { ErrorResponse, HttpStatusCode, SuccessfulResponse } from "@/common/utils"
 import middleware from "@/common/middleware"
 
 export class StaffController implements IRoute {
@@ -23,11 +23,7 @@ export class StaffController implements IRoute {
     }
 
     private initializeRoutes(): void {
-        this.router.post(
-            this.PATHS.ROOT,
-            middleware.verifyStaffPermissions(ESTAFF_PERMISSIONS.CREATE_STAFF),
-            this.createStaff
-        )
+        this.router.post(this.PATHS.ROOT, this.createStaff)
     }
 
     private async createStaff(req: Request, res: Response): Promise<void> {

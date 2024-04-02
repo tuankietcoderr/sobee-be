@@ -1,7 +1,7 @@
 import { ICategory, IRoute } from "@/interface"
 import { CategoryService } from "./category.service"
 import { Request, Response, Router } from "express"
-import { ESTAFF_PERMISSIONS, ErrorResponse, HttpStatusCode, SuccessfulResponse } from "@/common/utils"
+import { ErrorResponse, HttpStatusCode, SuccessfulResponse } from "@/common/utils"
 import middleware from "@/common/middleware"
 import { ERole } from "@/enum"
 
@@ -29,7 +29,6 @@ export class CategoryController implements IRoute {
             this.PATHS.ROOT,
             middleware.verifyToken,
             middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
-            middleware.verifyStaffPermissions(ESTAFF_PERMISSIONS.CREATE_CATEGORY),
             middleware.mustHaveFields<ICategory>("name", "slug", "image"),
             this.createCategory
         )
@@ -38,7 +37,6 @@ export class CategoryController implements IRoute {
             this.PATHS.CATEGORY,
             middleware.verifyToken,
             middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
-            middleware.verifyStaffPermissions(ESTAFF_PERMISSIONS.UPDATE_CATEGORY),
             this.updateCategory
         )
 
@@ -46,7 +44,6 @@ export class CategoryController implements IRoute {
             this.PATHS.CATEGORY,
             middleware.verifyToken,
             middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
-            middleware.verifyStaffPermissions(ESTAFF_PERMISSIONS.DELETE_CATEGORY),
             this.deleteCategory
         )
 

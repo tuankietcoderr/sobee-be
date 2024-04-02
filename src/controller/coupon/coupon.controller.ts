@@ -1,7 +1,7 @@
 import { ICoupon, IRoute } from "@/interface"
 import { CouponService } from "./coupon.service"
 import { Request, Response, Router } from "express"
-import { ESTAFF_PERMISSIONS, ErrorResponse, HttpStatusCode, SuccessfulResponse } from "@/common/utils"
+import { ErrorResponse, HttpStatusCode, SuccessfulResponse } from "@/common/utils"
 import middleware from "@/common/middleware"
 import { ERole } from "@/enum"
 
@@ -29,7 +29,6 @@ export class CouponController implements IRoute {
             this.PATHS.ROOT,
             middleware.verifyToken,
             middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
-            middleware.verifyStaffPermissions(ESTAFF_PERMISSIONS.CREATE_COUPON),
             middleware.mustHaveFields<ICoupon>("code", "discountValue", "startDate", "endDate", "usageLimit"),
             middleware.doNotAllowFields<ICoupon>("customerUsed", "status", "usageCount"),
             this.createCoupon
@@ -38,14 +37,12 @@ export class CouponController implements IRoute {
             this.PATHS.COUPON,
             middleware.verifyToken,
             middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
-            middleware.verifyStaffPermissions(ESTAFF_PERMISSIONS.UPDATE_COUPON),
             this.updateCoupon
         )
         this.router.delete(
             this.PATHS.COUPON,
             middleware.verifyToken,
             middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
-            middleware.verifyStaffPermissions(ESTAFF_PERMISSIONS.DELETE_COUPON),
             this.deleteCoupon
         )
         this.router.get(this.PATHS.ROOT, this.getCoupons)

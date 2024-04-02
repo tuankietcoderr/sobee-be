@@ -1,10 +1,13 @@
 import { ERole } from "@/enum"
-import { IMiddleware, IRole, IStaff } from "@/interface"
+import { IMiddleware } from "@/interface"
 import User from "@/models/User"
 import { NextFunction, Request, Response } from "express"
 import jwt, { JwtPayload } from "jsonwebtoken"
 import { ESTAFF_PERMISSIONS, ErrorResponse, HttpStatusCode, verifyToken } from "./utils"
 import KeyTokenService from "./utils/keyToken"
+import { EActionPermissions, ac } from "./utils/rbac"
+import { Model } from "mongoose"
+import { RoleService } from "@/controller"
 
 const HEADER = {
     AUTHORIZATION: "Authorization",
@@ -133,43 +136,131 @@ class Middleware implements IMiddleware {
 
     verifyStaffPermissions(...permissions: ESTAFF_PERMISSIONS[]) {
         return async (req: Request, res: Response, next: NextFunction) => {
+            // const role = req.role
+            // if (!role) {
+            //     return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
+            // }
+
+            // if (role === ERole.ADMIN) {
+            //     return next()
+            // }
+
+            // const userId = req.userId
+
+            // const user = await User.findById(
+            //     userId,
+            //     {},
+            //     {
+            //         populate: {
+            //             path: "user",
+            //             select: "staffRole",
+            //             populate: {
+            //                 path: "staffRole",
+            //                 select: "permissions"
+            //             }
+            //         }
+            //     }
+            // )
+            // if (!user) {
+            //     return new ErrorResponse(HttpStatusCode.NOT_FOUND, "User not found").from(res)
+            // }
+
+            // const staff = user.user as IStaff
+            // const staffRole = staff.staffRole as IRole
+            // const staffPermissions = staffRole.permissions
+
+            // for (const permission of permissions) {
+            //     if (!staffPermissions.includes(permission)) {
+            //         return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
+            //     }
+            // }
+
+            next()
+        }
+    }
+
+    /**
+     * @description: grand access to the resource
+     * @param {action} action: the action that the role can do (e.g: read, readAny, createOwn, createAny,...)
+     * @param {resource} resource: the resource that the role can access (e.g: user, product, review,...)
+     * @returns
+     */
+    grandAccess(action: EActionPermissions, resource: string) {
+        return async (req: Request, res: Response, next: NextFunction) => {
+            //get role from token and check if the role has the permission to access the resource
             const role = req.role
             if (!role) {
                 return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
             }
+            //query the database to get all the roles and their permissions
 
-            if (role === ERole.ADMIN) {
-                return next()
+            const listRoles = await new RoleService().getAllListRoles()
+
+            //set the roles and their permissions to the access control
+            ac.setGrants(listRoles)
+
+            //check if the action is allowed for access control
+            if (!ac.can(role)[action]) {
+                return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied!").from(res)
             }
 
+            //check if the role has the permission to access the resource
+            const permission = ac.can(role)[action](resource)
+
+            //if the permission is not granted, return an error
+            if (!permission.granted) {
+                return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
+            }
+
+            //if the role is not a customer, set the permission to granted
+            /**
+             * explain: the customer can only read their own resource but other roles can read any resource if they have the permission
+             * another purpose is first condition to verify owner of the resource in "veryfyOwner" middleware
+             */
+            if (role !== ERole.CUSTOMER) req.permission = permission.granted
+
+            next()
+        }
+    }
+
+    /**
+     * @description: verify the owner of the resource in the request params with the requester
+     * @param {onwerFields} onwerFields: the field that contains the owner id
+     * @param {model} model: the model of the resource (e.g: User, Product, Review)
+     * @param {idField} idField: the field that contains the id of the resource in the request params
+     * @returns
+     */
+    veryfyOwner<T>(onwerFields: keyof T, model: Model<T>, idField: string = "id") {
+        return async (req: Request, res: Response, next: NextFunction) => {
+            //if the permission is granted, return next
+            /**
+             *explain: if the permission is granted, it means the role is not a customer and the role has the permission to access the resource with owner permission
+             */
+            if (req.permission) return next()
+
+            //get the user id from the token and the id of the resource from the request params
             const userId = req.userId
+            const id = req.params[idField]
 
-            const user = await User.findById(
-                userId,
-                {},
-                {
-                    populate: {
-                        path: "user",
-                        select: "staffRole",
-                        populate: {
-                            path: "staffRole",
-                            select: "permissions"
-                        }
-                    }
-                }
-            )
-            if (!user) {
-                return new ErrorResponse(HttpStatusCode.NOT_FOUND, "User not found").from(res)
+            if (!userId) {
+                return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
             }
 
-            const staff = user.user as IStaff
-            const staffRole = staff.staffRole as IRole
-            const staffPermissions = staffRole.permissions
+            if (!id) {
+                return new ErrorResponse(HttpStatusCode.BAD_REQUEST, "Missing id").from(res)
+            }
 
-            for (const permission of permissions) {
-                if (!staffPermissions.includes(permission)) {
-                    return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
-                }
+            //query the database to get the resource
+            const data = await model.findById(id).lean()
+
+            //if the resource is not found, return an error
+            if (!data) {
+                return new ErrorResponse(HttpStatusCode.NOT_FOUND, "Data not found").from(res)
+            }
+
+            //if the owner of the resource is not the requester, return an error
+            if (data[onwerFields]?.toString() !== userId) {
+                return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
             }
 
             next()

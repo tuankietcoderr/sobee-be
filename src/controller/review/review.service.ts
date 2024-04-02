@@ -54,5 +54,9 @@ export class ReviewService implements ReviewRepository {
 
         const deleted = await foundReview.deleteOne()
         return deleted
+        // return {
+        //     acknowledged: true,
+        //     deletedCount: 1
+        // }
     }
 }
