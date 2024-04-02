@@ -23,11 +23,12 @@ class SuccessfulResponse<T> implements IFinalResponse<T> {
     }
 }
 
-class ErrorResponse<T> implements IFinalResponse<T> {
+class ErrorResponse<T> extends Error implements IFinalResponse<T> {
     success: boolean
     statusCode: number
     message: string
     constructor(statusCode: number = 500, message: string) {
+        super(message)
         this.success = false
         this.statusCode = statusCode
         this.message = message

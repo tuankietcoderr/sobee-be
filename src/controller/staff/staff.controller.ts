@@ -3,6 +3,7 @@ import { StaffService } from "./staff.service"
 import { Request, Response, Router } from "express"
 import { ErrorResponse, HttpStatusCode, SuccessfulResponse } from "@/common/utils"
 import middleware from "@/common/middleware"
+import { asyncHandler } from "@/common/utils"
 
 export class StaffController implements IRoute {
     private readonly router: Router
@@ -23,17 +24,12 @@ export class StaffController implements IRoute {
     }
 
     private initializeRoutes(): void {
-        this.router.post(this.PATHS.ROOT, this.createStaff)
+        this.router.post(this.PATHS.ROOT, asyncHandler(this.createStaff))
     }
 
     private async createStaff(req: Request, res: Response): Promise<void> {
-        try {
-            const result = await StaffController.staffService.create(req.body)
-            new SuccessfulResponse(result, HttpStatusCode.CREATED, "Staff created successfully.").from(res)
-        } catch (error: any) {
-            console.error(error)
-            new ErrorResponse(HttpStatusCode.INTERNAL_SERVER_ERROR, error.message).from(res)
-        }
+        const result = await StaffController.staffService.create(req.body)
+        new SuccessfulResponse(result, HttpStatusCode.CREATED, "Staff created successfully.").from(res)
     }
 
     getPath(): string {

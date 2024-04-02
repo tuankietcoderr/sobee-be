@@ -7,6 +7,7 @@ import { AuthService } from "./auth.service"
 import { LoginRequest, RegisterRequest } from "./dto"
 import { HttpStatusCode } from "@/common/utils"
 import { RefreshTokenRequest } from "./dto/refreshToken.dto"
+import { asyncHandler } from "@/common/utils"
 
 export class AuthController implements IRoute {
     private router: Router
@@ -31,82 +32,51 @@ export class AuthController implements IRoute {
         this.router.post(
             this.PATHS.REGISTER,
             middleware.mustHaveFields<RegisterRequest>("email", "name", "password"),
-            this.register
+            asyncHandler(this.register)
         )
 
         this.router.post(
             this.PATHS.LOGIN,
             middleware.mustHaveFields<LoginRequest>("emailOrPhone", "password"),
-            this.login
+            asyncHandler(this.login)
         )
-        this.router.get(this.PATHS.ME, middleware.verifyToken, this.me)
+        this.router.get(this.PATHS.ME, middleware.verifyToken, asyncHandler(this.me))
         this.router.post(
             this.PATHS.REFRESH_TOKEN,
             middleware.mustHaveFields<RefreshTokenRequest>("refreshToken"),
             middleware.verifyToken,
-            this.handleRefreshToken
+            asyncHandler(this.handleRefreshToken)
         )
-        this.router.post(this.PATHS.LOG_OUT, middleware.verifyToken, this.logout)
+        this.router.post(this.PATHS.LOG_OUT, middleware.verifyToken, asyncHandler(this.logout))
     }
 
     private async register(req: Request, res: Response) {
-        try {
-            const response = await AuthController.authService.register(req.body)
-            new SuccessfulResponse(response, HttpStatusCode.CREATED, "Register successfully").from(res)
-        } catch (error: any) {
-            if (error instanceof UserAlreadyExistsException) {
-                new ErrorResponse(error.statusCode, error.message).from(res)
-            } else {
-                new ErrorResponse(HttpStatusCode.INTERNAL_SERVER_ERROR, error.message).from(res)
-            }
-        }
+        const response = await AuthController.authService.register(req.body)
+        new SuccessfulResponse(response, HttpStatusCode.CREATED, "Register successfully").from(res)
     }
 
     private async login(req: Request, res: Response) {
-        try {
-            const response = await AuthController.authService.login(req.body)
-            new SuccessfulResponse(response, HttpStatusCode.OK, "Login successfully").from(res)
-        } catch (error: any) {
-            if (error instanceof UserNotFoundException || error instanceof WrongPasswordException) {
-                new ErrorResponse(error.statusCode, error.message).from(res)
-            } else {
-                new ErrorResponse(HttpStatusCode.INTERNAL_SERVER_ERROR, error.message).from(res)
-            }
-        }
+        const response = await AuthController.authService.login(req.body)
+        new SuccessfulResponse(response, HttpStatusCode.OK, "Login successfully").from(res)
     }
 
     private async me(req: Request, res: Response) {
-        try {
-            const response = await AuthController.authService.me({ userId: req.userId })
-            new SuccessfulResponse(response, HttpStatusCode.OK, "Get me successfully").from(res)
-        } catch (error: any) {
-            if (error instanceof UserNotFoundException) {
-                new ErrorResponse(error.statusCode, error.message).from(res)
-            }
-            new ErrorResponse(HttpStatusCode.INTERNAL_SERVER_ERROR, error.message).from(res)
-        }
+        const response = await AuthController.authService.me({ userId: req.userId })
+        new SuccessfulResponse(response, HttpStatusCode.OK, "Get me successfully").from(res)
     }
 
     private async handleRefreshToken(req: Request, res: Response) {
-        try {
-            const response = await AuthController.authService.handleRefreshToken(
-                { userId: req.userId, role: req.role },
-                req.body.refreshToken,
-                req.keyToken
-            )
-            new SuccessfulResponse(response, HttpStatusCode.OK, "Refresh token successfully").from(res)
-        } catch (error: any) {
-            new ErrorResponse(HttpStatusCode.INTERNAL_SERVER_ERROR, error.message).from(res)
-        }
+        const response = await AuthController.authService.handleRefreshToken(
+            { userId: req.userId, role: req.role },
+            req.body.refreshToken,
+            req.keyToken
+        )
+        new SuccessfulResponse(response, HttpStatusCode.OK, "Refresh token successfully").from(res)
     }
 
     private async logout(req: Request, res: Response) {
-        try {
-            const response = await AuthController.authService.logout(req.userId)
-            new SuccessfulResponse(response, HttpStatusCode.OK, "Logout successfully").from(res)
-        } catch (error: any) {
-            new ErrorResponse(HttpStatusCode.INTERNAL_SERVER_ERROR, error.message).from(res)
-        }
+        const response = await AuthController.authService.logout(req.userId)
+        new SuccessfulResponse(response, HttpStatusCode.OK, "Logout successfully").from(res)
     }
 
     getPath(): string {
