@@ -12,5 +12,5 @@ export interface IUser<T = ICustomer | IAdmin | IStaff> {
     avatar: string
     dateOfBirth: Date
     role: ERole
-    user: T | Types.ObjectId | string
+    _user: T | Types.ObjectId | string
 }

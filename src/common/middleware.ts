@@ -11,7 +11,8 @@ import { RoleService } from "@/controller"
 
 const HEADER = {
     AUTHORIZATION: "Authorization",
-    CLIENTID: "x-client-id"
+    CLIENTID: "x-client-id",
+    REFRESHTOKEN: "x-refresh-token"
 }
 
 class Middleware implements IMiddleware {
@@ -27,6 +28,19 @@ class Middleware implements IMiddleware {
             //check if the client id is present in the database
             const keyStore = await KeyTokenService.findbyUserId(clientId)
             if (!keyStore) return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "Not found keyStore").from(res)
+
+            //check if have refresh token in the header or body
+            const refreshToken = req.header(HEADER.REFRESHTOKEN) || req.body.refreshToken
+            if (refreshToken) {
+                const decoded = verifyToken(refreshToken, keyStore.privateKey) as JwtPayload
+                if (clientId !== decoded.userId)
+                    return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "Invalid request").from(res)
+
+                req.userId = decoded.userId
+                req.role = decoded.role
+                req.keyToken = keyStore
+                return next()
+            }
 
             //check if the token is present in the header
             const authHeader = req.header(HEADER.AUTHORIZATION)
@@ -52,10 +66,13 @@ class Middleware implements IMiddleware {
                 return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "Invalid token").from(res)
             }
             next()
-        } catch (err) {
+        } catch (err: any) {
+            if (err instanceof jwt.TokenExpiredError && req.path !== "/refresh-token") {
+                return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "Token has expired").from(res)
+            }
             console.log(err)
 
-            return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Invalid token").from(res)
+            return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "Invalid Token").from(res)
         }
     }
 

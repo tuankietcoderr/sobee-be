@@ -45,7 +45,7 @@ export class AuthService implements AuthRepository {
                 throw new InvalidRoleException()
         }
 
-        newUser.user = objectUser._id
+        newUser._user = objectUser._id
 
         const { privateKey, publicKey } = await createKeyPair()
         const { accessToken, refreshToken } = await createTokenPair(
@@ -123,7 +123,7 @@ export class AuthService implements AuthRepository {
             {},
             {
                 populate: {
-                    path: "user"
+                    path: "_user"
                 }
             }
         )

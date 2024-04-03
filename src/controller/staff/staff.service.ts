@@ -15,7 +15,7 @@ export class StaffService implements StaffRepository {
     async create(req: CreateStaffRequest): Promise<CreateStaffResponse> {
         const { staffRole, identityCard, ...rest } = req
         const { user } = await this.authService.register(rest)
-        const staffId = user.user.toString()
+        const staffId = user._user.toString()
 
         await this.update(staffId, { staffRole, identityCard })
 
