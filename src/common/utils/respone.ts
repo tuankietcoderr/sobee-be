@@ -1,5 +1,7 @@
 import { IFinalResponse } from "@/interface"
 import { Response } from "express"
+import { Socket } from "socket.io"
+import { SOCKET_SERVER_MESSAGE } from "../constants/socket"
 
 class SuccessfulResponse<T> implements IFinalResponse<T> {
     success: boolean
@@ -10,12 +12,21 @@ class SuccessfulResponse<T> implements IFinalResponse<T> {
         this.data = data
         this.success = true
         this.statusCode = statusCode
-        this.message = message
+        this.message = message || "Success"
     }
 
     from(res: Response): void {
         res.status(this.statusCode).json({
             success: this.success,
+            statusCode: this.statusCode,
+            message: this.message,
+            data: this.data
+        })
+    }
+
+    fromSocket(socket: Socket, eventName = SOCKET_SERVER_MESSAGE.SUCCESS): void {
+        socket.emit(eventName, {
+            success: true,
             statusCode: this.statusCode,
             message: this.message,
             data: this.data
@@ -31,7 +42,7 @@ class ErrorResponse<T> extends Error implements IFinalResponse<T> {
         super(message)
         this.success = false
         this.statusCode = statusCode
-        this.message = message
+        this.message = message || "Error"
     }
 
     from(res: Response): void {
@@ -41,6 +52,52 @@ class ErrorResponse<T> extends Error implements IFinalResponse<T> {
             message: this.message
         })
     }
+
+    fromSocket(socket: Socket): void {
+        socket.emit(SOCKET_SERVER_MESSAGE.ERROR, {
+            success: false,
+            statusCode: this.statusCode,
+            message: this.message
+        })
+    }
 }
 
-export { SuccessfulResponse, ErrorResponse }
+class UnauthorizedResponse<T> extends ErrorResponse<T> {
+    constructor(message: string = "Unauthorized") {
+        super(401, message)
+    }
+}
+
+class ForbiddenResponse<T> extends ErrorResponse<T> {
+    constructor(message: string = "Forbidden") {
+        super(403, message)
+    }
+}
+
+class NotFoundResponse<T> extends ErrorResponse<T> {
+    constructor(message: string = "Not found") {
+        super(404, message)
+    }
+}
+
+class BadRequestResponse<T> extends ErrorResponse<T> {
+    constructor(message: string = "Bad request") {
+        super(400, message)
+    }
+}
+
+class ConflictResponse<T> extends ErrorResponse<T> {
+    constructor(message: string = "Conflict") {
+        super(409, message)
+    }
+}
+
+export {
+    SuccessfulResponse,
+    ErrorResponse,
+    UnauthorizedResponse,
+    ForbiddenResponse,
+    NotFoundResponse,
+    BadRequestResponse,
+    ConflictResponse
+}
