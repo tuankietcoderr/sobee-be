@@ -11,6 +11,7 @@ import { verifyToken } from "./common/utils"
 import { JwtPayload } from "jsonwebtoken"
 import { IKeyToken } from "./interface"
 import KeyToken from "./models/KeyToken"
+import { SOCKET_SERVER_MESSAGE } from "./common/constants/socket"
 
 configDotenv()
 
@@ -41,7 +42,9 @@ async function runSocketServer() {
         next()
     })
     return new Promise((resolve, reject) => {
-        io.on("connection", async (socket) => {
+        io.on(SOCKET_SERVER_MESSAGE.CONNECTION, async (socket) => {
+            console.log("Socket connected: ", socket.id)
+
             getSocketRoutes(socket)
         })
         resolve("Socket server is running")
