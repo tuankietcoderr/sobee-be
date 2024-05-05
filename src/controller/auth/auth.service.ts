@@ -1,6 +1,14 @@
 import { Admin, Credential, Customer, Staff, User } from "@/models"
 import { AuthRepository } from "./auth.repository"
-import { LoginRequest, LoginResponse, MeRequest, MeResponse, RegisterRequest, RegisterResponse } from "./dto"
+import {
+    ChangePasswordRequest,
+    LoginRequest,
+    LoginResponse,
+    MeRequest,
+    MeResponse,
+    RegisterRequest,
+    RegisterResponse
+} from "./dto"
 import {
     InvalidRoleException,
     UserAlreadyExistsException,
@@ -178,5 +186,33 @@ export class AuthService implements AuthRepository {
 
     async logout(userId: string): Promise<object> {
         return await KeyTokenService.deleteByUserId(userId)
+    }
+
+    async changePassword(data: ChangePasswordRequest): Promise<null> {
+        const { userId, oldPassword, newPassword } = data
+
+        const user = await User.findById(userId)
+
+        if (!user) {
+            throw new UserNotFoundException()
+        }
+
+        const credential = await Credential.findOne({ userId })
+
+        if (!credential) {
+            throw new UserNotFoundException()
+        }
+
+        const isPasswordMatch = await comparePassword(oldPassword, credential.password)
+
+        if (!isPasswordMatch) {
+            throw new WrongPasswordException()
+        }
+
+        const hashedPassword = await hashPassword(newPassword)
+
+        await Credential.updateOne({ userId }, { password: hashedPassword })
+
+        return null
     }
 }

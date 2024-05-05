@@ -17,7 +17,8 @@ export class AuthController implements IRoute {
         LOGIN: "/login",
         REFRESH_TOKEN: "/refresh-token",
         LOG_OUT: "/logout",
-        ME: "/me"
+        ME: "/me",
+        CHANGE_PASSWORD: "/change-password"
     }
 
     private static readonly authService = new AuthService()
@@ -48,6 +49,12 @@ export class AuthController implements IRoute {
             asyncHandler(this.handleRefreshToken)
         )
         this.router.post(this.PATHS.LOG_OUT, middleware.verifyToken, asyncHandler(this.logout))
+        this.router.put(
+            this.PATHS.CHANGE_PASSWORD,
+            middleware.verifyToken,
+            middleware.mustHaveFields("oldPassword", "newPassword"),
+            asyncHandler(this.changePassword)
+        )
     }
 
     private async register(req: Request, res: Response) {
@@ -77,6 +84,14 @@ export class AuthController implements IRoute {
     private async logout(req: Request, res: Response) {
         const response = await AuthController.authService.logout(req.userId)
         new SuccessfulResponse(response, HttpStatusCode.OK, "Logout successfully").from(res)
+    }
+
+    private async changePassword(req: Request, res: Response) {
+        const response = await AuthController.authService.changePassword({
+            ...req.body,
+            userId: req.userId
+        })
+        new SuccessfulResponse(response, HttpStatusCode.OK, "Change password successfully").from(res)
     }
 
     getPath(): string {
