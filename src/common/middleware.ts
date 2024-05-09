@@ -78,7 +78,7 @@ class Middleware implements IMiddleware {
 
     verifyRoles(...roles: string[]) {
         return (req: Request, res: Response, next: NextFunction) => {
-            console.log(req.role)
+            // console.log(req.role)
             if (!req.role) {
                 return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
             }
