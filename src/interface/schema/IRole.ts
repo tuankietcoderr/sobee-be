@@ -3,6 +3,7 @@
 //     {role: 'admin', resource:'balance', action:'update:any', attributes:'*, !mount'},
 
 import { ERolePermissions } from "@/common/utils/rbac"
+import { Types } from "mongoose"
 
 //     {role: 'shop', resource:'profile', action:'update:own', attributes:'*'},
 //     {role: 'shop', resource:'balance', action:'update:own', attributes:'*, !mount'},
@@ -17,6 +18,7 @@ export interface IGrantListItem {
     attributes: string
 }
 export interface IRole {
+    _id?: string | Types.ObjectId
     role_name: string
     role_slug: string
     grant_lists: IGrantListItem[]

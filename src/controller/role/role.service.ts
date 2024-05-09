@@ -8,28 +8,28 @@ export class RoleService implements RoleRepository {
         return await Role.create(req)
     }
     async update(req: IRole): Promise<Partial<IRole>> {
-        const role = await Role.findOne({ role_name: req.role_name })
+        const role = await Role.findOneAndUpdate(
+            { role_name: req.role_name },
+            {
+                $set: {
+                    grant_lists: req.grant_lists
+                },
+                $inc: { __v: 1 }
+            },
+            { new: true }
+        )
 
         if (!role) {
             throw new ObjectModelOperationException("Role not found")
         }
-        const newGrantList = req.grant_lists
-        newGrantList.forEach((newGrant) => {
-            const existingGrantIndex = role.grant_lists.findIndex((grant) => grant.resource === newGrant.resource)
-            if (existingGrantIndex !== -1) {
-                role.grant_lists[existingGrantIndex].actions = newGrant.actions
-            } else {
-                role.grant_lists.push(newGrant)
-            }
-        })
-        await role.save()
         return role
     }
     async getAll(): Promise<IRole[]> {
         return await Role.find()
     }
-    async getOne(role_name: string): Promise<IRole> {
-        const role = await Role.findOne({ role_name })
+
+    async getOne(queryKey: keyof IRole, value: string): Promise<IRole> {
+        const role = await Role.findOne({ [queryKey]: value })
         if (!role) {
             throw new ObjectModelOperationException("Role not found")
         }
