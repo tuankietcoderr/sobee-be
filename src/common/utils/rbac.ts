@@ -53,7 +53,8 @@ export enum EResourcePermissions {
     CATEGORY = "CATEGORY",
     ATTRIBUTE = "ATTRIBUTE",
     ASSET = "ASSET",
-    MESSAGE = "MESSAGE"
+    MESSAGE = "MESSAGE",
+    TAX = "TAX"
 }
 
 export const EResourceToModel = {
