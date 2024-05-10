@@ -22,5 +22,6 @@ export const SCHEMA_NAME = {
     FAVORITES: "favorites",
     ROLES: "roles",
     KEYTOKENS: "keyTokens",
-    TAX: "taxes"
+    TAX: "taxes",
+    DAY_OFF: "dayOffs"
 }
