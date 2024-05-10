@@ -9,6 +9,7 @@ import {
     ChatRoomController,
     CouponController,
     CustomerController,
+    DayOffController,
     FavoriteController,
     NotificationController,
     OrderController,
@@ -48,7 +49,8 @@ function getRoutes(app: Express) {
         new RoleController(),
         new StaffController(),
         new UserController(),
-        new TaxController()
+        new TaxController(),
+        new DayOffController()
     ]
 
     controllers.forEach((controller) => {
