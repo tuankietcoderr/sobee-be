@@ -6,6 +6,7 @@ import middleware from "@/common/middleware"
 import { EActionPermissions, EResourcePermissions } from "@/common/utils/rbac"
 import { Review } from "@/models"
 import { asyncHandler } from "@/common/utils"
+import { ERole } from "@/enum"
 
 export class ReviewController implements IRoute {
     private readonly router: Router
@@ -28,6 +29,7 @@ export class ReviewController implements IRoute {
     }
 
     private initializeRoutes(): void {
+        this.router.get(this.PATHS.ROOT, middleware.verifyRoles(ERole.ADMIN), asyncHandler(this.getReviews))
         this.router.post(
             this.PATHS.ROOT,
             middleware.mustHaveFields<IReview>("content", "title", "rating", "product"),
@@ -63,6 +65,11 @@ export class ReviewController implements IRoute {
             req.role
         )
         new SuccessfulResponse(data, HttpStatusCode.OK, "Review updated successfully").from(res)
+    }
+
+    private async getReviews(req: Request, res: Response): Promise<void> {
+        const data = await ReviewController.reviewService.getReviews()
+        new SuccessfulResponse(data, HttpStatusCode.OK, "Get all reviews successfully").from(res)
     }
 
     private async getReviewsById(req: Request, res: Response): Promise<void> {

@@ -4,12 +4,9 @@ import { SCHEMA_NAME } from "./schema-name"
 
 const ReviewSchema = new Schema<IReview>(
     {
-        assets: [
-            {
-                ref: SCHEMA_NAME.ASSETS,
-                type: Schema.Types.ObjectId
-            }
-        ],
+        assets: {
+            type: [String]
+        },
         content: {
             required: true,
             type: String

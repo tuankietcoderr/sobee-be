@@ -23,13 +23,18 @@ export class ReviewService implements ReviewRepository {
 
     async getReviewsById(reviewId: string): Promise<IReview> {
         const foundReview = await Review.findById(reviewId)
-            .populate({ path: "customer", select: ["name", "email"] })
-            // .populate({ path: "product", select: ["name", "price"] })
+            .populate({ path: "customer" })
+            .populate({ path: "product" })
             .lean()
 
         if (!foundReview) throw new ObjectModelNotFoundException("Review not found")
 
         return foundReview
+    }
+
+    //get all review and paginate
+    async getReviews(): Promise<IReview[]> {
+        return await Review.find().populate({ path: "customer" }).populate({ path: "product" }).lean()
     }
 
     async getReviewsByProductId(productId: string): Promise<IReview[]> {
