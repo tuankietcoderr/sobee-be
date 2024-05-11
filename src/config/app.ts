@@ -66,7 +66,7 @@ const app = express()
 const allowOrigins = "*"
 app.use(
     cors({
-        origin: "http://localhost:3000",
+        origin: "*",
         exposedHeaders: "content-length",
         credentials: true,
         allowedHeaders: [
@@ -82,7 +82,9 @@ app.use(
             "User-Agent",
             "X-CSRF-Token",
             "x-client-id",
-            "x-refresh-token"
+            "x-refresh-token",
+            "Access-Control-Allow-Origin",
+            "Access-Control-Allow-Credentials"
         ],
         maxAge: 86400,
         preflightContinue: false,
