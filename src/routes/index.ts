@@ -53,7 +53,7 @@ function getRoutes(app: Express) {
         new UserController(),
         new TaxController(),
         new DayOffController(),
-        new BrandController()
+        new BrandController(),
         new ShippingController()
     ]
 
