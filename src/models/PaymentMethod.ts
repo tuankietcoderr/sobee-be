@@ -4,13 +4,11 @@ import { SCHEMA_NAME } from "./schema-name"
 
 const PaymentMethodSchema = new Schema<IPaymentMethod>(
     {
-        image: {
-            type: Schema.Types.ObjectId,
-            ref: SCHEMA_NAME.ASSETS
-        },
+        image: String,
         name: {
             type: String,
-            required: true
+            required: true,
+            unique: true
         }
     },
     {
