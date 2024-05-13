@@ -23,5 +23,6 @@ export const SCHEMA_NAME = {
     ROLES: "roles",
     KEYTOKENS: "keyTokens",
     TAX: "taxes",
-    DAY_OFF: "dayOffs"
+    DAY_OFF: "dayOffs",
+    SHIPPINGS: "shippings"
 }
