@@ -6,6 +6,6 @@ export abstract class CategoryRepository {
     abstract update(id: string, data: Partial<ICategory>): Promise<ICategory>
     abstract delete(id: string): Promise<ICategory>
     abstract getAll(): Promise<Array<ICategory>>
-    abstract getBy(type: "id" | "slug", id: string): Promise<ICategory>
+    abstract getOne(type: keyof ICategory, id: string): Promise<ICategory>
     abstract getProducts(id: string): Promise<Array<ICategory>>
 }
