@@ -1,10 +1,8 @@
-import { Types } from "mongoose"
-import { IAsset } from "./IAsset"
-
 export interface ICategory {
+    _id?: string
     name: string
     slug: string
     description: string
     deletedAt: Date
-    image: string | Types.ObjectId | IAsset
+    image: string
 }

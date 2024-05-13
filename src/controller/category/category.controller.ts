@@ -13,7 +13,6 @@ export class CategoryController implements IRoute {
     private readonly PATHS = {
         ROOT: "/",
         CATEGORY: "/:categoryId",
-        GET_BY: "/:type/:categoryId", // type: slug, id
         PRODUCT: "/:categoryId/product"
     }
 
@@ -30,7 +29,7 @@ export class CategoryController implements IRoute {
             this.PATHS.ROOT,
             middleware.verifyToken,
             middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
-            middleware.mustHaveFields<ICategory>("name", "slug", "image"),
+            middleware.mustHaveFields<ICategory>("name", "slug"),
             asyncHandler(this.createCategory)
         )
 
@@ -50,7 +49,7 @@ export class CategoryController implements IRoute {
 
         this.router.get(this.PATHS.ROOT, asyncHandler(this.getAllCategories))
 
-        this.router.get(this.PATHS.GET_BY, asyncHandler(this.getCategoryBy))
+        this.router.get(this.PATHS.CATEGORY, asyncHandler(this.getCategoryBy))
 
         this.router.get(this.PATHS.PRODUCT, asyncHandler(this.getProductsByCategory))
     }
@@ -76,7 +75,7 @@ export class CategoryController implements IRoute {
     }
 
     private async getCategoryBy(req: Request, res: Response): Promise<void> {
-        const data = await CategoryController.categoryService.getBy(req.params.type as any, req.params.categoryId)
+        const data = await CategoryController.categoryService.getOne("_id", req.params.categoryId)
         new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
     }
 
