@@ -17,6 +17,11 @@ const ProductSchema = new Schema<IProduct>(
             type: String,
             unique: true
         },
+        brand: {
+            ref: SCHEMA_NAME.BRAND,
+            type: Schema.Types.ObjectId,
+            default: null
+        },
         description: String,
         deletedAt: {
             type: Date,

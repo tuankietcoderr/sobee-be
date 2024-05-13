@@ -24,5 +24,6 @@ export const SCHEMA_NAME = {
     KEYTOKENS: "keyTokens",
     TAX: "taxes",
     DAY_OFF: "dayOffs",
+    BRAND: "brands"
     SHIPPINGS: "shippings"
 }

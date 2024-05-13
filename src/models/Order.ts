@@ -25,7 +25,7 @@ const OrderSchema = new Schema<IOrder>(
             type: Date,
             default: null
         },
-        note: String,
+        note: { type: String, default: null },
         orderGeneratedId: {
             type: String,
             required: true,
