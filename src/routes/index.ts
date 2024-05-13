@@ -20,6 +20,7 @@ import {
     ProductController,
     ReviewController,
     RoleController,
+    ShippingController,
     StaffController,
     TaxController,
     UserController
@@ -50,7 +51,8 @@ function getRoutes(app: Express) {
         new StaffController(),
         new UserController(),
         new TaxController(),
-        new DayOffController()
+        new DayOffController(),
+        new ShippingController()
     ]
 
     controllers.forEach((controller) => {
