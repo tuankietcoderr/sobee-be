@@ -25,4 +25,5 @@ export const SCHEMA_NAME = {
     TAX: "taxes",
     DAY_OFF: "dayOffs",
     BRAND: "brands"
+    SHIPPINGS: "shippings"
 }

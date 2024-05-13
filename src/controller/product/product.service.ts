@@ -8,7 +8,7 @@ export class ProductService implements ProductRepository {
     private readonly categoryService = new CategoryService()
     async create(req: CreateProductRequest): Promise<IProduct> {
         const { productAssetAttributes, category } = req
-        const _category = await this.categoryService.getBy("id", category.toString())
+        const _category = await this.categoryService.getOne("_id", category.toString())
         const product = await Product.create(req)
         return product
     }

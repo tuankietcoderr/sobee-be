@@ -9,12 +9,10 @@ const CategorySchema = new Schema<ICategory>(
             type: Date,
             default: null
         },
-        image: {
-            type: Schema.Types.ObjectId,
-            ref: SCHEMA_NAME.ASSETS
-        },
+        image: String,
         name: {
             type: String,
+            unique: true,
             required: true
         },
         slug: {

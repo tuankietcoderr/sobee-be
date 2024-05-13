@@ -9,12 +9,6 @@ export class CategoryService implements CategoryRepository {
     private readonly assetService = new AssetService()
 
     async create(req: CreateCategoryRequest): Promise<CreateCategoryResponse> {
-        const { image } = req
-
-        const asset = await Asset.findById(image)
-
-        if (!asset) throw new ObjectModelNotFoundException("Asset not found")
-
         return await Category.create(req)
     }
     async update(id: string, data: Partial<ICategory>): Promise<ICategory> {
@@ -36,7 +30,7 @@ export class CategoryService implements CategoryRepository {
     async getAll(): Promise<Array<ICategory>> {
         return await Category.find()
     }
-    async getBy(type: "id" | "slug", id: string): Promise<ICategory> {
+    async getOne(type: keyof ICategory, id: string): Promise<ICategory> {
         const data = await Category.findOne({ [type]: id })
         if (!data) throw new ObjectModelNotFoundException()
         return data
