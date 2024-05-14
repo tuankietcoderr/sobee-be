@@ -26,5 +26,6 @@ export const SCHEMA_NAME = {
     DAY_OFF: "dayOffs",
     BRAND: "brands",
     SHIPPINGS: "shippings",
-    FAQ: "faqs"
+    FAQ: "faqs",
+    TERM: "terms"
 }
