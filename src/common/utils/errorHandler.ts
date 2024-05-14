@@ -16,7 +16,7 @@ export const errorHandlerMiddleware = (err: any, req: Request, res: Response, ne
     }
 
     const isProduction = process.env.NODE_ENV === "production" || process.env.NODE_ENV === "prod"
-    console.log(process.env.NODE_ENV)
+    // console.log(process.env.NODE_ENV)
 
     if (!isProduction) {
         respone["stack"] = err.stack
