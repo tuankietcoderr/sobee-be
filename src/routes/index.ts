@@ -26,6 +26,7 @@ import {
     StaffController,
     TaxController,
     TermController,
+    UploadController,
     UserController
 } from "@/controller"
 import { Express } from "express"
@@ -58,7 +59,8 @@ function getRoutes(app: Express) {
         new BrandController(),
         new ShippingController(),
         new FaqController(),
-        new TermController()
+        new TermController(),
+        new UploadController()
     ]
 
     controllers.forEach((controller) => {
