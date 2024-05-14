@@ -11,6 +11,14 @@ declare global {
             MINIO_ACCESS_KEY: string
             MINIO_SECRET_KEY: string
             MINIO_USE_SSL: string
+
+            CLOUDINARY_UPLOAD_PRESET: string
+            CLOUDINARY_CLOUD_NAME: string
+            CLOUDINARY_API_KEY: string
+            CLOUDINARY_API_SECRET: string
+            CLOUDINARY_URL: string
+            CLOUDINARY_TIMESTAMP: string
+            CLOUDINARY_ROOT_FOLDER: string
         }
     }
 }
