@@ -17,14 +17,21 @@ export class UserService implements UserRepository {
         return updatedUser
     }
 
-    async changeUserAvatar(id: Types.ObjectId | string, avatar: Express.Multer.File): Promise<UpdateUserInfoResponse> {
-        const user = await User.findById(id)
+    async changeUserAvatar(id: Types.ObjectId | string, avatar: string): Promise<UpdateUserInfoResponse> {
+        const user = await User.findByIdAndUpdate(
+            id,
+            {
+                $set: {
+                    avatar
+                }
+            },
+            {
+                new: true
+            }
+        )
         if (!user) {
             throw new ObjectModelNotFoundException("User not found")
         }
-        const fileName = await this.assetService.create({ file: avatar })
-        user.avatar = fileName.urlPath
-        await user.save()
         return user.toJSON()
     }
 }

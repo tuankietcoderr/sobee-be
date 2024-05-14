@@ -26,11 +26,7 @@ export class UserController implements IRoute {
 
     private initializeRoutes(): void {
         this.router.put(this.PATHS.ROOT, asyncHandler(this.updateUserInfo))
-        this.router.put(
-            this.PATHS.AVATAR,
-            Multer({ storage: Multer.memoryStorage() }).single(this.UPLOAD_FIELD_NAME),
-            asyncHandler(this.changeUserAvatar)
-        )
+        this.router.put(this.PATHS.AVATAR, asyncHandler(this.changeUserAvatar))
     }
 
     private async updateUserInfo(req: Request, res: Response): Promise<void> {
@@ -39,7 +35,7 @@ export class UserController implements IRoute {
     }
 
     private async changeUserAvatar(req: Request, res: Response): Promise<void> {
-        const data = await UserController.userService.changeUserAvatar(req.userId, req.file!)
+        const data = await UserController.userService.changeUserAvatar(req.userId, req.body.avatar)
         new SuccessfulResponse(data, HttpStatusCode.OK, "User avatar updated successfully").from(res)
     }
 
