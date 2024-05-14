@@ -4,12 +4,14 @@ import {
     AssetController,
     AttributeController,
     AuthController,
+    BrandController,
     CategoryController,
     ChatMessageController,
     ChatRoomController,
     CouponController,
     CustomerController,
     DayOffController,
+    FaqController,
     FavoriteController,
     NotificationController,
     OrderController,
@@ -25,7 +27,6 @@ import {
     TaxController,
     UserController
 } from "@/controller"
-import { BrandController } from "@/controller/brand"
 import { Express } from "express"
 
 function getRoutes(app: Express) {
@@ -54,7 +55,8 @@ function getRoutes(app: Express) {
         new TaxController(),
         new DayOffController(),
         new BrandController(),
-        new ShippingController()
+        new ShippingController(),
+        new FaqController()
     ]
 
     controllers.forEach((controller) => {
