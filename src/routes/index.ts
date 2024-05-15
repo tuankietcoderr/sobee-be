@@ -1,7 +1,6 @@
 import { asyncHandler, errorHandlerMiddleware } from "@/common/utils"
 import {
     AddressController,
-    AssetController,
     AttributeController,
     AuthController,
     BrandController,
@@ -34,7 +33,6 @@ import { Express } from "express"
 function getRoutes(app: Express) {
     const controllers = [
         new AddressController(),
-        new AssetController(),
         new AttributeController(),
         new AuthController(),
         new CategoryController(),

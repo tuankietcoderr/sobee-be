@@ -1,6 +1,7 @@
 import { ICustomer } from "@/interface"
 import { Schema, Types, model } from "mongoose"
 import { SCHEMA_NAME } from "./schema-name"
+import { EGender } from "@/enum"
 
 const CustomerSchema = new Schema<ICustomer>(
     {
@@ -25,6 +26,15 @@ const CustomerSchema = new Schema<ICustomer>(
         isPhoneNumberVerified: {
             type: Boolean,
             default: false
+        },
+        gender: {
+            type: String,
+            enum: EGender,
+            default: null
+        },
+        isActive: {
+            type: Boolean,
+            default: true
         }
     },
     {
