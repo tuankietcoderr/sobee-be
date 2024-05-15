@@ -1,5 +1,4 @@
 export * from "./address"
-export * from "./asset"
 export * from "./attribute"
 export * from "./auth"
 export * from "./category"

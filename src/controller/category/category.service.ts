@@ -1,13 +1,10 @@
 import { ICategory } from "@/interface"
 import { CategoryRepository } from "./category.repository"
 import { CreateCategoryRequest, CreateCategoryResponse } from "./dto"
-import { Asset, Category, Product } from "@/models"
+import { Category, Product } from "@/models"
 import { ObjectModelNotFoundException, ObjectModelOperationException } from "@/common/exceptions"
-import { AssetService } from "../asset"
 
 export class CategoryService implements CategoryRepository {
-    private readonly assetService = new AssetService()
-
     async create(req: CreateCategoryRequest): Promise<CreateCategoryResponse> {
         return await Category.create(req)
     }
