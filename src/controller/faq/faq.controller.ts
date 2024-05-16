@@ -3,6 +3,7 @@ import { FaqService } from "./faq.service"
 import { Request, Response, Router } from "express"
 import middleware from "@/common/middleware"
 import { HttpStatusCode, SuccessfulResponse, asyncHandler } from "@/common/utils"
+import { ERole } from "@/enum"
 
 export class FaqController implements IRoute {
     private readonly router: Router
@@ -18,7 +19,6 @@ export class FaqController implements IRoute {
     constructor(path = "/api/faq") {
         this.router = Router()
         this.path = path
-        this.router.use(middleware.verifyToken)
         this.initializeRoutes()
     }
 
@@ -27,16 +27,30 @@ export class FaqController implements IRoute {
             this.PATHS.ROOT,
             middleware.mustHaveFields<IFaq>("title", "description", "type"),
             middleware.doNotAllowFields<IFaq>("issued_by", "slug"),
+            middleware.verifyToken,
+            middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
             asyncHandler(this.create)
         )
         this.router.put(
             this.PATHS.FAQ,
             middleware.doNotAllowFields<IFaq>("issued_by", "slug"),
+            middleware.verifyToken,
+            middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
             asyncHandler(this.update)
         )
-        this.router.delete(this.PATHS.FAQ, asyncHandler(this.delete))
+        this.router.delete(
+            this.PATHS.FAQ,
+            middleware.verifyToken,
+            middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
+            asyncHandler(this.delete)
+        )
         this.router.get(this.PATHS.ROOT, asyncHandler(this.getAll))
-        this.router.get(this.PATHS.FAQ, asyncHandler(this.getById))
+        this.router.get(
+            this.PATHS.FAQ,
+            middleware.verifyToken,
+            middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
+            asyncHandler(this.getById)
+        )
     }
 
     async create(req: Request, res: Response): Promise<void> {

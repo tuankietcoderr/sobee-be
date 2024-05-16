@@ -3,6 +3,7 @@ import { TermService } from "./term.service"
 import { Request, Response, Router } from "express"
 import middleware from "@/common/middleware"
 import { HttpStatusCode, SuccessfulResponse, asyncHandler } from "@/common/utils"
+import { ERole } from "@/enum"
 
 export class TermController implements IRoute {
     private readonly router: Router
@@ -18,7 +19,6 @@ export class TermController implements IRoute {
     constructor(path = "/api/term") {
         this.router = Router()
         this.path = path
-        this.router.use(middleware.verifyToken)
         this.initializeRoutes()
     }
 
@@ -27,16 +27,30 @@ export class TermController implements IRoute {
             this.PATHS.ROOT,
             middleware.mustHaveFields<ITerm>("title", "description", "type"),
             middleware.doNotAllowFields<ITerm>("issued_by", "slug"),
+            middleware.verifyToken,
+            middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
             asyncHandler(this.create)
         )
         this.router.put(
             this.PATHS.TERM,
             middleware.doNotAllowFields<ITerm>("issued_by", "slug"),
+            middleware.verifyToken,
+            middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
             asyncHandler(this.update)
         )
-        this.router.delete(this.PATHS.TERM, asyncHandler(this.delete))
+        this.router.delete(
+            this.PATHS.TERM,
+            middleware.verifyToken,
+            middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
+            asyncHandler(this.delete)
+        )
         this.router.get(this.PATHS.ROOT, asyncHandler(this.getAll))
-        this.router.get(this.PATHS.TERM, asyncHandler(this.getById))
+        this.router.get(
+            this.PATHS.TERM,
+            middleware.verifyToken,
+            middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
+            asyncHandler(this.getById)
+        )
     }
 
     async create(req: Request, res: Response): Promise<void> {
