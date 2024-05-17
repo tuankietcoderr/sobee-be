@@ -13,8 +13,11 @@ export class CouponController implements IRoute {
     private readonly PATHS = {
         ROOT: "/",
         COUPON: "/:couponId",
+        ACTIVE: "/:couponId/active",
+        DEACTIVE: "/:couponId/deactive",
         USER: "/user",
-        USE: "/:couponId/use"
+        USE: "/:couponId/use",
+        VALIDATE: "/validate"
     }
 
     private static readonly couponService = new CouponService()
@@ -22,6 +25,7 @@ export class CouponController implements IRoute {
     constructor(path = "/api/coupon") {
         this.router = Router()
         this.path = path
+        this.router.use(middleware.verifyToken)
         this.initializeRoutes()
     }
 
@@ -30,26 +34,50 @@ export class CouponController implements IRoute {
             this.PATHS.ROOT,
             middleware.verifyToken,
             middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
-            middleware.mustHaveFields<ICoupon>("code", "discountValue", "startDate", "endDate", "usageLimit"),
-            middleware.doNotAllowFields<ICoupon>("customerUsed", "status", "usageCount"),
+            middleware.mustHaveFields<ICoupon>(
+                "code",
+                "discountValue",
+                "startDate",
+                "endDate",
+                "usageLimit",
+                "minOrderValue",
+                "applyTo"
+            ),
+            middleware.doNotAllowFields<ICoupon>("customerUsed", "usageCount"),
             asyncHandler(this.createCoupon)
         )
         this.router.put(
             this.PATHS.COUPON,
-            middleware.verifyToken,
             middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
             asyncHandler(this.updateCoupon)
         )
         this.router.delete(
             this.PATHS.COUPON,
-            middleware.verifyToken,
             middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
             asyncHandler(this.deleteCoupon)
         )
         this.router.get(this.PATHS.ROOT, asyncHandler(this.getCoupons))
-        this.router.get(this.PATHS.USER, middleware.verifyToken, asyncHandler(this.getUserCoupons))
+        this.router.get(this.PATHS.USER, asyncHandler(this.getUserCoupons))
         this.router.get(this.PATHS.COUPON, asyncHandler(this.getCoupon))
-        this.router.put(this.PATHS.USE, middleware.verifyToken, asyncHandler(this.useCoupon))
+        this.router.put(
+            this.PATHS.ACTIVE,
+            middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
+            asyncHandler(this.activeCoupon)
+        )
+        this.router.put(
+            this.PATHS.DEACTIVE,
+            middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
+            asyncHandler(this.deactiveCoupon)
+        )
+        this.router.put(this.PATHS.USE, asyncHandler(this.useCoupon))
+        this.router.post(
+            this.PATHS.VALIDATE,
+            middleware.mustHaveFields<{ code: string; orderProducts: string[]; orderValue: number }>(
+                "code",
+                "orderValue"
+            ),
+            asyncHandler(this.validateCoupon)
+        )
     }
 
     private async createCoupon(req: Request, res: Response): Promise<void> {
@@ -82,9 +110,29 @@ export class CouponController implements IRoute {
         new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
     }
 
+    private async activeCoupon(req: Request, res: Response): Promise<void> {
+        const data = await CouponController.couponService.activeCoupon(req.params.couponId)
+        new SuccessfulResponse(data, HttpStatusCode.OK, "Coupon activated successfully").from(res)
+    }
+
+    private async deactiveCoupon(req: Request, res: Response): Promise<void> {
+        const data = await CouponController.couponService.deactiveCoupon(req.params.couponId)
+        new SuccessfulResponse(data, HttpStatusCode.OK, "Coupon deactivated successfully").from(res)
+    }
+
     private async useCoupon(req: Request, res: Response): Promise<void> {
         const data = await CouponController.couponService.use(req.params.couponId, req.userId)
         new SuccessfulResponse(data, HttpStatusCode.OK, "Coupon used successfully").from(res)
+    }
+
+    private async validateCoupon(req: Request, res: Response): Promise<void> {
+        const data = await CouponController.couponService.validate(
+            req.body.code,
+            req.userId,
+            req.body.orderProducts,
+            req.body.orderValue
+        )
+        new SuccessfulResponse(data, HttpStatusCode.OK, "Coupon validated successfully").from(res)
     }
 
     getPath(): string {

@@ -8,5 +8,5 @@ export abstract class CouponRepository {
     abstract getAll(): Promise<ICoupon[]>
     abstract getById(id: string): Promise<ICoupon>
     abstract getUserCoupons(userId: string): Promise<ICoupon[]>
-    abstract use(id: string, userId: string): Promise<ICoupon>
+    // abstract use(id: string, userId: string): Promise<ICoupon>
 }
