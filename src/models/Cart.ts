@@ -12,7 +12,7 @@ const CartSchema = new Schema<ICart>(
         ],
         customer: {
             type: Schema.Types.ObjectId,
-            ref: SCHEMA_NAME.CUSTOMERS
+            ref: SCHEMA_NAME.USERS
         }
     },
     {

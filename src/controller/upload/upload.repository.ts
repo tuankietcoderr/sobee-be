@@ -21,6 +21,6 @@ export abstract class UploadRepository {
         folder?: string,
         resourceType?: string
     ): Promise<{
-        url: string
+        urls: string[]
     }>
 }

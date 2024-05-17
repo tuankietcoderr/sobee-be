@@ -11,15 +11,15 @@ const AddressSchema = new Schema<IAddress>(
             type: Boolean,
             default: false
         },
-        postalCode: String,
         specificAddress: String,
-        street: String,
         ward: String,
         customer: {
             type: Schema.Types.ObjectId,
-            ref: SCHEMA_NAME.CUSTOMERS,
+            ref: SCHEMA_NAME.USERS,
             required: true
-        }
+        },
+        name: String,
+        phoneNumber: String
     },
     {
         versionKey: false,
