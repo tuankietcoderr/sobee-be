@@ -1,7 +1,7 @@
 import { ICoupon } from "@/interface"
 import { Schema, model } from "mongoose"
 import { SCHEMA_NAME } from "./schema-name"
-import { ECouponStatus } from "@/enum"
+import { ECouponApplyType, ECouponStatus, ECouponType } from "@/enum"
 
 const CouponSchema = new Schema<ICoupon>(
     {
@@ -10,12 +10,27 @@ const CouponSchema = new Schema<ICoupon>(
             required: true,
             unique: true
         },
+        image: {
+            type: String,
+            required: true,
+            default:
+                "https://res.cloudinary.com/dtfkou1of/image/upload/v1715880344/sobee-storage/image/coupon/coupon_default.png"
+        },
+        type: {
+            type: String,
+            enum: Object.values(ECouponType),
+            default: ECouponType.FIXED
+        },
         customerUsed: [
             {
                 type: Schema.Types.ObjectId,
                 ref: SCHEMA_NAME.USERS
             }
         ],
+        minOrderValue: {
+            type: Number,
+            default: 0
+        },
         discountValue: {
             type: Number,
             required: true
@@ -40,7 +55,18 @@ const CouponSchema = new Schema<ICoupon>(
         usageLimit: {
             type: Number,
             required: true
-        }
+        },
+        applyTo: {
+            type: String,
+            enum: Object.values(ECouponApplyType),
+            default: ECouponApplyType.ALL
+        },
+        productApply: [
+            {
+                type: Schema.Types.ObjectId,
+                ref: SCHEMA_NAME.PRODUCTS
+            }
+        ]
     },
     {
         versionKey: false,

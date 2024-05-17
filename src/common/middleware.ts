@@ -55,7 +55,10 @@ class Middleware implements IMiddleware {
 
             //check if the client id in the token is the same as the client id in the header
             if (clientId !== decoded.userId)
-                return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "Invalid request").from(res)
+                return new ErrorResponse(
+                    HttpStatusCode.UNAUTHORIZED,
+                    "Access denied. Your client id is not match with token"
+                ).from(res)
 
             req.userId = decoded.userId
             req.role = decoded.role
@@ -63,16 +66,15 @@ class Middleware implements IMiddleware {
 
             const user = await User.findById(decoded.userId).lean()
             if (!user) {
-                return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "Invalid token").from(res)
+                return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "User not found").from(res)
             }
             next()
         } catch (err: any) {
             if (err instanceof jwt.TokenExpiredError && req.path !== "/refresh-token") {
                 return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "Token has expired").from(res)
             }
-            console.log(err)
 
-            return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "Invalid Token").from(res)
+            return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, `Invalid Token: ${err.message}`).from(res)
         }
     }
 

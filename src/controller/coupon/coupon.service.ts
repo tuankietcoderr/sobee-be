@@ -2,7 +2,8 @@ import { ICoupon } from "@/interface"
 import { CouponRepository } from "./coupon.repository"
 import { Coupon } from "@/models"
 import { ObjectModelNotFoundException } from "@/common/exceptions"
-import { ECouponStatus } from "@/enum"
+import { ECouponApplyType, ECouponStatus } from "@/enum"
+import { BadRequestResponse } from "@/common/utils"
 
 export class CouponService implements CouponRepository {
     async create(data: ICoupon): Promise<ICoupon> {
@@ -17,9 +18,31 @@ export class CouponService implements CouponRepository {
         return await Coupon.create(data)
     }
     async update(id: string, data: Partial<ICoupon>): Promise<ICoupon> {
-        const updated = await Coupon.findByIdAndUpdate(id, { $set: data }, { new: true })
-        if (!updated) throw new ObjectModelNotFoundException("Coupon not found")
-        return updated
+        const { startDate, endDate, discountValue, code } = data
+
+        if (startDate && startDate < new Date()) throw new Error("Start date cannot be in the past")
+
+        if (startDate && endDate && startDate > endDate) throw new Error("Start date cannot be greater than end date")
+
+        if (discountValue && discountValue < 0) throw new Error("Discount value cannot be negative")
+
+        if (endDate && new Date(endDate) < new Date()) {
+            data.status = ECouponStatus.EXPIRED
+        }
+
+        const foundCoupon = await Coupon.findById(id)
+
+        if (!foundCoupon) throw new ObjectModelNotFoundException("Coupon not found")
+
+        if (foundCoupon.status === ECouponStatus.EXPIRED && endDate && new Date(endDate) > new Date()) {
+            data.status = ECouponStatus.ACTIVE
+        }
+
+        foundCoupon.set(data)
+
+        // const updated = await Coupon.findByIdAndUpdate(id, { $set: data }, { new: true })
+        // if (!updated) throw new ObjectModelNotFoundException("Coupon not found")
+        return await foundCoupon.save()
     }
     async delete(id: string): Promise<ICoupon> {
         const deleted = await Coupon.findByIdAndDelete(id)
@@ -46,20 +69,71 @@ export class CouponService implements CouponRepository {
         })
     }
 
-    async use(id: string, userId: string): Promise<ICoupon> {
-        const coupon = await Coupon.findById(id)
+    async activeCoupon(id: string): Promise<ICoupon> {
+        const coupon = await Coupon.findByIdAndUpdate(
+            id,
+            {
+                $set: {
+                    status: ECouponStatus.ACTIVE
+                }
+            },
+            { new: true }
+        ).lean()
+        if (!coupon) throw new ObjectModelNotFoundException("Coupon not found")
+        return coupon
+    }
+
+    async deactiveCoupon(id: string): Promise<ICoupon> {
+        const coupon = await Coupon.findByIdAndUpdate(
+            id,
+            {
+                $set: {
+                    status: ECouponStatus.DISABLED
+                }
+            },
+            { new: true }
+        ).lean()
+        if (!coupon) throw new ObjectModelNotFoundException("Coupon not found")
+
+        return coupon
+    }
+
+    async validate(code: string, userId: string, orderProducts: string[], orderValue: number): Promise<ICoupon> {
+        const coupon = await Coupon.findOne({ code })
 
         if (!coupon) throw new ObjectModelNotFoundException("Coupon not found")
 
-        if (coupon.status === ECouponStatus.DISABLED) throw new Error("Coupon disabled")
+        if (coupon.status === ECouponStatus.DISABLED) throw new BadRequestResponse("Coupon disabled")
+        if (coupon.status === ECouponStatus.EXPIRED) throw new BadRequestResponse("Coupon expired")
 
         if (coupon.endDate < new Date()) {
             coupon.status = ECouponStatus.EXPIRED
             await coupon.save()
-            throw new Error("Coupon expired")
+            throw new BadRequestResponse("Coupon expired")
         }
 
-        if (coupon.customerUsed.includes(userId as any)) throw new Error("Coupon already used")
+        if (coupon.startDate > new Date()) throw new BadRequestResponse("Coupon not yet active")
+
+        if (orderValue < coupon.minOrderValue) throw new BadRequestResponse("Order value less than minimum order value")
+
+        if (coupon.usageCount >= coupon.usageLimit) throw new BadRequestResponse("Coupon usage limit exceeded")
+
+        if (coupon.applyTo === ECouponApplyType.SPECIFIC) {
+            if (!orderProducts.every((productId) => (coupon.productApply as string[]).includes(productId))) {
+                throw new BadRequestResponse(
+                    "Coupon is applicable only to specific products. One or more products in the order are not eligible for this coupon"
+                )
+            }
+        }
+        if (coupon.customerUsed.includes(userId as any)) throw new BadRequestResponse("Coupon already used")
+
+        return coupon
+    }
+
+    async use(code: string, userId: string): Promise<ICoupon> {
+        const coupon = await Coupon.findOne({ code })
+
+        if (!coupon) throw new ObjectModelNotFoundException("Coupon not found")
 
         coupon.customerUsed.push(userId as any)
 
@@ -67,8 +141,6 @@ export class CouponService implements CouponRepository {
 
         if (coupon.usageCount === coupon.usageLimit) {
             coupon.status = ECouponStatus.DISABLED
-        } else if (coupon.usageCount > coupon.usageLimit) {
-            throw new Error("Coupon usage limit exceeded")
         }
 
         await coupon.save()

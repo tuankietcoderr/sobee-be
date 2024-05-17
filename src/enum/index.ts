@@ -1,5 +1,7 @@
 export * from "./EProductStatus"
 export * from "./ECouponStatus"
+export * from "./ECouponType"
+export * from "./ECouponApplyType"
 export * from "./EOrderStatus"
 export * from "./EAssetType"
 export * from "./ERole"
