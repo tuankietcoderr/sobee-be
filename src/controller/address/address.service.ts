@@ -60,9 +60,7 @@ export class AddressService implements AddressRepository {
 
         return deleted.deleteOne()
     }
-    async getCustomerAddresses(customerId: string, requestId: string, role: string): Promise<IAddress[]> {
-        if (customerId !== requestId && role === ERole.CUSTOMER)
-            throw new UnauthorizedException("You are not authorized to get this address")
+    async getCustomerAddresses(customerId: string): Promise<IAddress[]> {
         const addresses = await Address.find({ customer: customerId }).lean()
         return addresses
     }

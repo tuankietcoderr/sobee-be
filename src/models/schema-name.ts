@@ -27,5 +27,7 @@ export const SCHEMA_NAME = {
     BRAND: "brands",
     SHIPPINGS: "shippings",
     FAQ: "faqs",
-    TERM: "terms"
+    TERM: "terms",
+    PAYMENT_ACCOUNTS: "paymentAccounts",
+    PAYMENT_CARDS: "paymentCards"
 }

@@ -13,7 +13,7 @@ const CouponSchema = new Schema<ICoupon>(
         customerUsed: [
             {
                 type: Schema.Types.ObjectId,
-                ref: SCHEMA_NAME.CUSTOMERS
+                ref: SCHEMA_NAME.USERS
             }
         ],
         discountValue: {

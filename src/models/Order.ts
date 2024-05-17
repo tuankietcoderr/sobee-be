@@ -19,7 +19,7 @@ const OrderSchema = new Schema<IOrder>(
         },
         customer: {
             type: Schema.Types.ObjectId,
-            ref: SCHEMA_NAME.CUSTOMERS
+            ref: SCHEMA_NAME.USERS
         },
         deliveredAt: {
             type: Date,

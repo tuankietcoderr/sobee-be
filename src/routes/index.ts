@@ -4,6 +4,7 @@ import {
     AttributeController,
     AuthController,
     BrandController,
+    CardController,
     CategoryController,
     ChatMessageController,
     ChatRoomController,
@@ -15,6 +16,7 @@ import {
     NotificationController,
     OrderController,
     OrderItemController,
+    PaymentAccountController,
     PaymentMethodController,
     PermissionController,
     ProductAssetAttributeController,
@@ -58,7 +60,9 @@ function getRoutes(app: Express) {
         new ShippingController(),
         new FaqController(),
         new TermController(),
-        new UploadController()
+        new UploadController(),
+        new CardController(),
+        new PaymentAccountController()
     ]
 
     controllers.forEach((controller) => {

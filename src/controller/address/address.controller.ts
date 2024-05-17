@@ -11,7 +11,7 @@ export class AddressController implements IRoute {
     private readonly PATHS = {
         ROOT: "/",
         ADDRESS: "/:id",
-        CUSTOMER: "/customer/:customerId",
+        CUSTOMER: "/customer",
         DEFAULT: "/set-default"
     }
 
@@ -29,21 +29,21 @@ export class AddressController implements IRoute {
             this.PATHS.ROOT,
             middleware.mustHaveFields<IAddress>(
                 "country",
-                "postalCode",
                 "city",
                 "district",
                 "ward",
-                "street",
                 "specificAddress",
-                "isDefault"
+                "isDefault",
+                "name",
+                "phoneNumber"
             ),
             middleware.doNotAllowFields<IAddress>("customer"),
             this.createAddress
         )
+        this.router.put(this.PATHS.DEFAULT, middleware.mustHaveFields("addressId"), this.setDefaultAddress)
         this.router.put(this.PATHS.ADDRESS, this.updateAddress)
         this.router.delete(this.PATHS.ADDRESS, this.deleteAddress)
         this.router.get(this.PATHS.CUSTOMER, this.getCustomerAddresses)
-        this.router.post(this.PATHS.DEFAULT, middleware.mustHaveFields("addressId"), this.setDefaultAddress)
     }
 
     getPath(): string {
@@ -83,11 +83,7 @@ export class AddressController implements IRoute {
 
     private async getCustomerAddresses(req: Request, res: Response): Promise<void> {
         try {
-            const data = await AddressController.addressService.getCustomerAddresses(
-                req.params.customerId,
-                req.userId,
-                req.role
-            )
+            const data = await AddressController.addressService.getCustomerAddresses(req.userId)
             new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
         } catch (error: any) {
             new ErrorResponse(HttpStatusCode.BAD_REQUEST, error.message).from(res)

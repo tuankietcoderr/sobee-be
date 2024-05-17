@@ -43,13 +43,13 @@ export class UploadService implements UploadRepository {
         uploadPreset: string = process.env.CLOUDINARY_UPLOAD_PRESET,
         folder: string = "/",
         resourceType: ResourceType = "auto"
-    ): Promise<{ url: string }> {
+    ): Promise<{ urls: string[] }> {
         const res = await cloudinary.uploader.unsigned_upload(url, uploadPreset, {
             folder: process.env.CLOUDINARY_ROOT_FOLDER + "/" + folder,
             resource_type: resourceType
         })
         return {
-            url: res.secure_url
+            urls: [res.secure_url]
         }
     }
 }
