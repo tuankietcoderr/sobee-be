@@ -1,22 +1,32 @@
-import { EProductStatus } from "@/enum"
+import { EProductStatus, EProductType } from "@/enum"
 import { Types } from "mongoose"
 import { ICategory } from "./ICategory"
-import { IProductAssetAttribute } from "./IProductAssetAttribute"
 import { IBrand } from "./IBrand"
+import { IVariant } from "./IVariant"
 
 export interface IProduct {
-    category: Types.ObjectId | ICategory | string
+    _id?: string | Types.ObjectId
     name: string
     slug: string
     description: string
-    price: number
+    displayPrice: number
+    minPrice: number
+    maxPrice: number
+    thumbnail: string
     brand: string | Types.ObjectId | IBrand
+    category: Types.ObjectId | ICategory | string
     discount: number
     quantity: number
     sold: number
     status: EProductStatus
     favoritesCount: number
-    productAssetAttributes: string[] | Types.ObjectId[] | IProductAssetAttribute[]
+    type: EProductType
+    variants: string[] | Types.ObjectId[] | IVariant[]
+    ratingCount: number
+    ratingValue: number
+    isVariation: boolean
     isFeatured: boolean
+    isDraft: boolean
+    isDiscount: boolean
     deletedAt: Date
 }

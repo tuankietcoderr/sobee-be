@@ -29,4 +29,10 @@ export class BrandService implements BrandRepository {
         if (!brand) throw new ObjectModelNotFoundException("Brand not found")
         return brand
     }
+
+    async getOne(type: string, value: string): Promise<IBrand> {
+        const brand = await Brand.findOne({ [type]: value }).lean()
+        if (!brand) throw new ObjectModelNotFoundException("Brand not found")
+        return brand
+    }
 }
