@@ -18,18 +18,18 @@ export class BrandController implements IRoute {
     constructor(path = "/api/brand") {
         this.router = Router()
         this.path = path
-        this.router.use(middleware.verifyToken)
         this.initializeRoutes()
     }
 
     private initializeRoutes(): void {
         this.router.post(
             this.PATHS.ROOT,
+            this.router.use(middleware.verifyToken),
             middleware.mustHaveFields<IBrand>("name", "logo", "website"),
             asyncHandler(this.create)
         )
-        this.router.put(this.PATHS.ID, asyncHandler(this.update))
-        this.router.delete(this.PATHS.ID, asyncHandler(this.delete))
+        this.router.put(this.PATHS.ID, this.router.use(middleware.verifyToken), asyncHandler(this.update))
+        this.router.use(middleware.verifyToken), this.router.delete(this.PATHS.ID, asyncHandler(this.delete))
         this.router.get(this.PATHS.ROOT, asyncHandler(this.findAll))
         this.router.get(this.PATHS.ID, asyncHandler(this.findById))
     }
