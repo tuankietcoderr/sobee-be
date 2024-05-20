@@ -7,7 +7,6 @@ export const SCHEMA_NAME = {
     PRODUCTS: "products",
     VARIANTS: "variants",
     ASSETS: "assets",
-    ATTRIBUTES: "attributes",
     CATEGORIES: "categories",
     ORDERS: "orders",
     ORDER_ITEMS: "orderItems",

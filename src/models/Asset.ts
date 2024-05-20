@@ -4,16 +4,22 @@ import { SCHEMA_NAME } from "./schema-name"
 
 const AssetSchema = new Schema<IAsset>(
     {
-        filename: String,
-        size: Number,
-        mimeType: {
-            type: String
+        folder: {
+            type: String,
+            default: "images"
         },
-        urlPath: String
+        name: {
+            type: String,
+            required: true
+        },
+        assets: [
+            {
+                type: String
+            }
+        ]
     },
     {
-        versionKey: false,
-        timestamps: true
+        versionKey: false
     }
 )
 

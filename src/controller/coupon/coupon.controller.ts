@@ -17,7 +17,8 @@ export class CouponController implements IRoute {
         DEACTIVE: "/:couponId/deactive",
         USER: "/user",
         USE: "/:couponId/use",
-        VALIDATE: "/validate"
+        VALIDATE: "/validate",
+        TODAY: "/today"
     }
 
     private static readonly couponService = new CouponService()
@@ -25,7 +26,6 @@ export class CouponController implements IRoute {
     constructor(path = "/api/coupon") {
         this.router = Router()
         this.path = path
-        this.router.use(middleware.verifyToken)
         this.initializeRoutes()
     }
 
@@ -48,16 +48,20 @@ export class CouponController implements IRoute {
         )
         this.router.put(
             this.PATHS.COUPON,
+            middleware.verifyToken,
             middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
             asyncHandler(this.updateCoupon)
         )
         this.router.delete(
             this.PATHS.COUPON,
+            middleware.verifyToken,
             middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
             asyncHandler(this.deleteCoupon)
         )
         this.router.get(this.PATHS.ROOT, asyncHandler(this.getCoupons))
-        this.router.get(this.PATHS.USER, asyncHandler(this.getUserCoupons))
+        middleware.verifyToken,
+            this.router.get(this.PATHS.USER, middleware.verifyToken, asyncHandler(this.getUserCoupons))
+        this.router.get(this.PATHS.TODAY, middleware.verifyToken, asyncHandler(this.getTodayCoupons))
         this.router.get(this.PATHS.COUPON, asyncHandler(this.getCoupon))
         this.router.put(
             this.PATHS.ACTIVE,
@@ -133,6 +137,11 @@ export class CouponController implements IRoute {
             req.body.orderValue
         )
         new SuccessfulResponse(data, HttpStatusCode.OK, "Coupon validated successfully").from(res)
+    }
+
+    private async getTodayCoupons(req: Request, res: Response): Promise<void> {
+        const data = await CouponController.couponService.getToday()
+        new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
     }
 
     getPath(): string {

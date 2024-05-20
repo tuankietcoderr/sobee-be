@@ -1,6 +1,7 @@
 import { IVariant } from "@/interface"
 import { Schema, model } from "mongoose"
 import { SCHEMA_NAME } from "./schema-name"
+import { EProductSize } from "@/enum"
 
 const Variant = new Schema<IVariant>(
     {
@@ -17,17 +18,15 @@ const Variant = new Schema<IVariant>(
             type: Number,
             required: true
         },
-        attributeList: [
-            {
-                attribute: {
-                    ref: SCHEMA_NAME.ATTRIBUTES,
-                    type: Schema.Types.ObjectId
-                },
-                value: {
-                    type: String
-                }
-            }
-        ]
+        size: {
+            type: String,
+            enum: Object.values(EProductSize),
+            default: EProductSize.S
+        },
+        color: {
+            type: String,
+            default: "#000000"
+        }
     },
     {
         versionKey: false

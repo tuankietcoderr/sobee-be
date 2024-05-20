@@ -2,17 +2,10 @@ import { IVariant } from "@/interface"
 import { VariantRepository } from "./variant.repository"
 import { Variant } from "@/models"
 import { ObjectModelNotFoundException, ObjectModelOperationException } from "@/common/exceptions"
-import { AttributeService } from "../attribute"
-import { ProductService } from "../product"
-import { CreateVariantRequest, CreateVariantResponse } from "./dto"
 
 export class VariantService implements VariantRepository {
-    async create(req: CreateVariantRequest): Promise<CreateVariantResponse> {
-        const { amount, attributeList } = req
-
-        if (!attributeList || attributeList.length === 0) {
-            throw new ObjectModelOperationException("Product variant must have at least one attribute")
-        }
+    async create(req: IVariant): Promise<IVariant> {
+        const { amount } = req
 
         if (amount <= 0) {
             throw new ObjectModelOperationException("Product variant amount must be greater than 0")

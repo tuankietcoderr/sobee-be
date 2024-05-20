@@ -15,6 +15,22 @@ export class ProductService implements ProductRepository {
     private readonly variantService: VariantService
     private readonly brandService: BrandService
 
+    private readonly generalPopulate = {
+        populate: [
+            {
+                path: "category",
+                select: "name"
+            },
+            {
+                path: "variants"
+            },
+            {
+                path: "brand",
+                select: "name logo"
+            }
+        ]
+    }
+
     constructor() {
         this.categoryService = new CategoryService()
         this.variantService = new VariantService()
@@ -25,15 +41,15 @@ export class ProductService implements ProductRepository {
         const { category, variants, type, brand } = req
         const _variants = variants as IVariant[]
         await this.categoryService.getOne("_id", category.toString())
-        await this.brandService.getOne("_id", brand.toString())
+        brand && (await this.brandService.getOne("_id", brand.toString()))
         const minPrice = Math.min(..._variants.map((v) => v.price))
         const maxPrice = Math.max(..._variants.map((v) => v.price))
-
         const product = new Product({
             ...req,
             minPrice,
             maxPrice,
-            variants: []
+            variants: [],
+            brand: brand || null
         })
 
         const slug = generateNameId({
@@ -67,32 +83,36 @@ export class ProductService implements ProductRepository {
 
         if (!product) throw new ObjectModelNotFoundException("Product not found")
 
+        data.brand = data.brand || undefined
+
         if (type === EProductType.SIMPLE && product.variants.length > 0) {
             data.variants = []
+            console.log("delete variants")
+            console.log(product.variants)
             const variantsPromises = (product.variants as string[]).map(
-                async (v) => await this.variantService.delete(v)
+                async (v) => await this.variantService.delete(v.toString())
             )
             await Promise.all(variantsPromises)
-        }
-
-        if (variants) {
-            const _variants = variants as IVariant[]
-            const minPrice = Math.min(..._variants.map((v) => v.price))
-            const maxPrice = Math.max(..._variants.map((v) => v.price))
-            data.minPrice = minPrice
-            data.maxPrice = maxPrice
-            const ids = [] as string[]
-            const updateVariantsPromises = _variants.map(async (v) => {
-                if (v._id) {
-                    ids.push(v._id.toString())
-                    return await this.variantService.update(v._id.toString(), v)
-                } else {
-                    const newV = await this.variantService.create(v)
-                    ids.push(newV._id?.toString() as string)
-                }
-            })
-            await Promise.all(updateVariantsPromises)
-            data.variants = ids
+        } else {
+            if (variants) {
+                const _variants = variants as IVariant[]
+                const minPrice = Math.min(..._variants.map((v) => v.price))
+                const maxPrice = Math.max(..._variants.map((v) => v.price))
+                data.minPrice = minPrice
+                data.maxPrice = maxPrice
+                const ids = [] as string[]
+                const updateVariantsPromises = _variants.map(async (v) => {
+                    if (v._id) {
+                        ids.push(v._id.toString())
+                        return await this.variantService.update(v._id.toString(), v)
+                    } else {
+                        const newV = await this.variantService.create(v)
+                        ids.push(newV._id?.toString() as string)
+                    }
+                })
+                await Promise.all(updateVariantsPromises)
+                data.variants = ids
+            }
         }
 
         await product.updateOne(data)
@@ -116,16 +136,7 @@ export class ProductService implements ProductRepository {
     }
 
     async getPublishedProducts(): Promise<IProduct[]> {
-        return await Product.find(
-            { isDraft: false },
-            {},
-            {
-                populate: {
-                    path: "category",
-                    select: "name"
-                }
-            }
-        ).sort({ createdAt: -1 })
+        return await Product.find({ isDraft: false }, {}, this.generalPopulate).sort({ createdAt: -1 })
     }
 
     async getDraftProducts(): Promise<IProduct[]> {
@@ -174,28 +185,32 @@ export class ProductService implements ProductRepository {
     }
 
     async getFeatured(): Promise<IProduct[]> {
-        return await Product.find({ isFeatured: true })
+        return await Product.find({ isFeatured: true }, {}, this.generalPopulate)
     }
 
     async getRelated(category: string): Promise<IProduct[]> {
-        return await Product.find({ category })
+        return await Product.find({ category }, {}, this.generalPopulate)
     }
 
     async getBestSeller(): Promise<IProduct[]> {
-        return await Product.find({
-            sold: { $gt: 0 }
-        })
+        return await Product.find(
+            {
+                sold: { $gt: 0 }
+            },
+            {},
+            this.generalPopulate
+        )
             .sort({ sold: -1 })
             .limit(10)
     }
 
     async getPopular(): Promise<IProduct[]> {
-        return await Product.find({ ratingCount: { $gt: 3 }, ratingValue: { $gt: 3 } })
+        return await Product.find({ ratingCount: { $gt: 3 }, ratingValue: { $gt: 3 } }, {}, this.generalPopulate)
             .sort({ ratingValue: -1, ratingCount: -1 })
             .limit(10)
     }
 
     async getDiscounted(): Promise<IProduct[]> {
-        return await Product.find({ isDiscount: true })
+        return await Product.find({ isDiscount: true }, {}, this.generalPopulate)
     }
 }

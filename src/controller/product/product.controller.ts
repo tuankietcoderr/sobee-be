@@ -41,11 +41,10 @@ export class ProductController implements IRoute {
                 "quantity",
                 "description",
                 "variants",
-                "brand",
                 "type",
                 "thumbnail"
             ),
-            this.createProduct
+            asyncHandler(this.createProduct)
         )
         this.router.put(
             this.PATHS.PRODUCT,

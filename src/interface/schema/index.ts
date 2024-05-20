@@ -1,7 +1,6 @@
 export * from "./IAddress"
 export * from "./IAdmin"
 export * from "./IAsset"
-export * from "./IAttribute"
 export * from "./IBank"
 export * from "./IBrand"
 export * from "./ICart"

@@ -1,6 +1,8 @@
+import { Types } from "mongoose"
+
 export interface IAsset {
-    filename: string
-    urlPath: string
-    mimeType: string
-    size: number
+    _id?: string | Types.ObjectId
+    name: string
+    folder: string
+    assets: string[]
 }
