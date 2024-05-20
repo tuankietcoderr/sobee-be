@@ -1,57 +1,216 @@
-import { IProduct } from "@/interface"
+import { IProduct, IVariant } from "@/interface"
 import { CreateProductRequest } from "./dto"
 import { ProductRepository } from "./product.repository"
 import { CategoryService } from "../category"
 import { Product } from "@/models"
+import { EProductType } from "@/enum"
+import { ObjectModelNotFoundException, ObjectModelOperationException } from "@/common/exceptions"
+import { VariantService } from "../variant"
+import { BrandService } from "../brand"
+import { generateNameId } from "@/common/utils"
+import { DeleteResult } from "mongodb"
 
 export class ProductService implements ProductRepository {
-    private readonly categoryService = new CategoryService()
+    private readonly categoryService: CategoryService
+    private readonly variantService: VariantService
+    private readonly brandService: BrandService
+
+    private readonly generalPopulate = {
+        populate: [
+            {
+                path: "category",
+                select: "name"
+            },
+            {
+                path: "variants"
+            },
+            {
+                path: "brand",
+                select: "name logo"
+            }
+        ]
+    }
+
+    constructor() {
+        this.categoryService = new CategoryService()
+        this.variantService = new VariantService()
+        this.brandService = new BrandService()
+    }
+
     async create(req: CreateProductRequest): Promise<IProduct> {
-        const { productAssetAttributes, category } = req
-        const _category = await this.categoryService.getOne("_id", category.toString())
-        const product = await Product.create(req)
+        const { category, variants, type, brand } = req
+        const _variants = variants as IVariant[]
+        await this.categoryService.getOne("_id", category.toString())
+        brand && (await this.brandService.getOne("_id", brand.toString()))
+        const minPrice = Math.min(..._variants.map((v) => v.price))
+        const maxPrice = Math.max(..._variants.map((v) => v.price))
+        const product = new Product({
+            ...req,
+            minPrice,
+            maxPrice,
+            variants: [],
+            brand: brand || null
+        })
+
+        const slug = generateNameId({
+            name: product.name,
+            id: product._id?.toString() as string
+        })
+
+        product.slug = slug
+
+        if (type === EProductType.VARIABLE) {
+            if (!variants || variants.length === 0) {
+                throw new ObjectModelOperationException("Variable product must have at least one attribute")
+            }
+
+            const _ids = [] as string[]
+            for (const variant of _variants) {
+                const res = await this.variantService.create(variant)
+                _ids.push(res._id?.toString() as string)
+            }
+            product.variants = _ids
+        }
+
+        await product.save()
+
         return product
     }
-    update(id: string, data: Partial<IProduct>): Promise<IProduct> {
-        throw new Error("Method not implemented.")
+
+    async update(id: string, data: Partial<IProduct>): Promise<IProduct> {
+        const { variants, type } = data
+        const product = await Product.findById(id)
+
+        if (!product) throw new ObjectModelNotFoundException("Product not found")
+
+        data.brand = data.brand || undefined
+
+        if (type === EProductType.SIMPLE && product.variants.length > 0) {
+            data.variants = []
+            console.log("delete variants")
+            console.log(product.variants)
+            const variantsPromises = (product.variants as string[]).map(
+                async (v) => await this.variantService.delete(v.toString())
+            )
+            await Promise.all(variantsPromises)
+        } else {
+            if (variants) {
+                const _variants = variants as IVariant[]
+                const minPrice = Math.min(..._variants.map((v) => v.price))
+                const maxPrice = Math.max(..._variants.map((v) => v.price))
+                data.minPrice = minPrice
+                data.maxPrice = maxPrice
+                const ids = [] as string[]
+                const updateVariantsPromises = _variants.map(async (v) => {
+                    if (v._id) {
+                        ids.push(v._id.toString())
+                        return await this.variantService.update(v._id.toString(), v)
+                    } else {
+                        const newV = await this.variantService.create(v)
+                        ids.push(newV._id?.toString() as string)
+                    }
+                })
+                await Promise.all(updateVariantsPromises)
+                data.variants = ids
+            }
+        }
+
+        await product.updateOne(data)
+
+        return product
     }
-    delete(id: string): Promise<void> {
-        throw new Error("Method not implemented.")
+
+    async delete(id: string): Promise<DeleteResult> {
+        const product = await Product.findById(id)
+
+        if (!product) throw new ObjectModelNotFoundException("Product not found")
+
+        if (product.variants.length > 0) {
+            const variantsPromises = (product.variants as string[]).map(
+                async (v) => await this.variantService.delete(v)
+            )
+            await Promise.all(variantsPromises)
+        }
+
+        return await product.deleteOne()
     }
-    getAll(): Promise<IProduct[]> {
-        throw new Error("Method not implemented.")
+
+    async getPublishedProducts(): Promise<IProduct[]> {
+        return await Product.find({ isDraft: false }, {}, this.generalPopulate).sort({ createdAt: -1 })
     }
-    getBy(type: string, id: string): Promise<IProduct[]> {
-        throw new Error("Method not implemented.")
+
+    async getDraftProducts(): Promise<IProduct[]> {
+        return await Product.find(
+            { isDraft: true },
+            {
+                category: 1,
+                name: 1,
+                displayPrice: 1,
+                type: 1,
+                quantity: 1,
+                status: 1,
+                updatedAt: 1
+            },
+            {
+                populate: {
+                    path: "category",
+                    select: "name"
+                }
+            }
+        ).sort({ createdAt: -1 })
     }
-    search(query: string): Promise<IProduct[]> {
-        throw new Error("Method not implemented.")
+
+    async getOne(type: keyof IProduct, id: string): Promise<IProduct> {
+        const product = await Product.findOne(
+            { [type]: id },
+            {},
+            {
+                populate: [
+                    {
+                        path: "category",
+                        select: "name"
+                    },
+                    {
+                        path: "variants"
+                    },
+                    {
+                        path: "brand",
+                        select: "name logo website"
+                    }
+                ]
+            }
+        )
+        if (!product) throw new ObjectModelNotFoundException("Product not found")
+        return product
     }
-    getSold(): Promise<IProduct[]> {
-        throw new Error("Method not implemented.")
+
+    async getFeatured(): Promise<IProduct[]> {
+        return await Product.find({ isFeatured: true }, {}, this.generalPopulate)
     }
-    getDeleted(): Promise<IProduct[]> {
-        throw new Error("Method not implemented.")
+
+    async getRelated(category: string): Promise<IProduct[]> {
+        return await Product.find({ category }, {}, this.generalPopulate)
     }
-    getActive(): Promise<IProduct[]> {
-        throw new Error("Method not implemented.")
+
+    async getBestSeller(): Promise<IProduct[]> {
+        return await Product.find(
+            {
+                sold: { $gt: 0 }
+            },
+            {},
+            this.generalPopulate
+        )
+            .sort({ sold: -1 })
+            .limit(10)
     }
-    getFeatured(): Promise<IProduct[]> {
-        throw new Error("Method not implemented.")
+
+    async getPopular(): Promise<IProduct[]> {
+        return await Product.find({ ratingCount: { $gt: 3 }, ratingValue: { $gt: 3 } }, {}, this.generalPopulate)
+            .sort({ ratingValue: -1, ratingCount: -1 })
+            .limit(10)
     }
-    getRelated(id: string): Promise<IProduct[]> {
-        throw new Error("Method not implemented.")
-    }
-    getBestSeller(): Promise<IProduct[]> {
-        throw new Error("Method not implemented.")
-    }
-    getNewArrival(): Promise<IProduct[]> {
-        throw new Error("Method not implemented.")
-    }
-    getPopular(): Promise<IProduct[]> {
-        throw new Error("Method not implemented.")
-    }
-    getDiscounted(): Promise<IProduct[]> {
-        throw new Error("Method not implemented.")
+
+    async getDiscounted(): Promise<IProduct[]> {
+        return await Product.find({ isDiscount: true }, {}, this.generalPopulate)
     }
 }

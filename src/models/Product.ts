@@ -1,4 +1,4 @@
-import { EProductStatus } from "@/enum"
+import { EProductStatus, EProductType } from "@/enum"
 import { IProduct } from "@/interface"
 import { Schema, model } from "mongoose"
 import { SCHEMA_NAME } from "./schema-name"
@@ -35,17 +35,30 @@ const ProductSchema = new Schema<IProduct>(
             type: Number,
             default: 0
         },
-        price: {
+        displayPrice: {
             type: Number,
             required: true
+        },
+        minPrice: {
+            type: Number,
+            required: true
+        },
+        maxPrice: {
+            type: Number,
+            required: true
+        },
+        type: {
+            type: String,
+            enum: Object.values(EProductType),
+            default: EProductType.SIMPLE
         },
         favoritesCount: {
             type: Number,
             default: 0
         },
-        productAssetAttributes: [
+        variants: [
             {
-                ref: SCHEMA_NAME.PRODUCT_ASSET_ATTRIBUTES,
+                ref: SCHEMA_NAME.VARIANTS,
                 type: Schema.Types.ObjectId
             }
         ],
@@ -61,7 +74,28 @@ const ProductSchema = new Schema<IProduct>(
             type: String,
             enum: Object.values(EProductStatus),
             default: EProductStatus.ACTIVE
-        }
+        },
+        isDiscount: {
+            type: Boolean,
+            default: false
+        },
+        isDraft: {
+            type: Boolean,
+            default: false
+        },
+        isVariation: {
+            type: Boolean,
+            default: false
+        },
+        ratingCount: {
+            type: Number,
+            default: 0
+        },
+        ratingValue: {
+            type: Number,
+            default: 0
+        },
+        thumbnail: String
     },
     {
         versionKey: false,

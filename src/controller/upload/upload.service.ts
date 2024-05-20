@@ -1,9 +1,17 @@
 import { cloudinary } from "@/common/utils"
 import { UploadRepository } from "./upload.repository"
+import { AssetService } from "../asset"
+import { Asset } from "@/models"
 
 type ResourceType = "image" | "video" | "raw" | "auto"
 
 export class UploadService implements UploadRepository {
+    private readonly assetService: AssetService
+
+    constructor() {
+        this.assetService = new AssetService()
+    }
+
     async uploadSingleFile(
         file: Express.Multer.File,
         uploadPreset: string = process.env.CLOUDINARY_UPLOAD_PRESET,
@@ -34,8 +42,29 @@ export class UploadService implements UploadRepository {
             async (file) => await this.uploadSingleFile(file, uploadPreset, folder, resourceType)
         )
         const res = await Promise.all(allFiles)
+        const urls = res.map((r) => r.url)
+
+        const asset = await Asset.findOne({ name: resourceType, folder })
+
+        if (asset) {
+            await asset.updateOne(
+                {
+                    $push: {
+                        assets: urls
+                    }
+                },
+                { new: true }
+            )
+        } else {
+            await this.assetService.create({
+                folder,
+                assets: urls,
+                name: resourceType
+            })
+        }
+
         return {
-            urls: res.map((r) => r.url)
+            urls
         }
     }
     async uploadUrl(
@@ -48,8 +77,29 @@ export class UploadService implements UploadRepository {
             folder: process.env.CLOUDINARY_ROOT_FOLDER + "/" + folder,
             resource_type: resourceType
         })
+
+        const urls = [res.secure_url]
+
+        const asset = await Asset.findOne({ name: resourceType, folder })
+
+        if (asset) {
+            await asset.updateOne(
+                {
+                    $push: {
+                        assets: urls
+                    }
+                },
+                { new: true }
+            )
+        } else {
+            await this.assetService.create({
+                folder,
+                assets: urls,
+                name: resourceType
+            })
+        }
         return {
-            urls: [res.secure_url]
+            urls
         }
     }
 }

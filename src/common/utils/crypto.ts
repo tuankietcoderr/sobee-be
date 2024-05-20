@@ -1,6 +1,7 @@
 import jwt from "jsonwebtoken"
 import bcrypt from "bcryptjs"
 import crypto from "crypto"
+import { Types } from "mongoose"
 
 export const verifyToken = (token: string, secretKey: string) => {
     return jwt.verify(token, secretKey)
@@ -50,4 +51,18 @@ export const createKeyPair = () => {
     const privateKey = crypto.randomBytes(64).toString("hex")
 
     return { publicKey, privateKey }
+}
+
+const removeSpecialCharacter = (str: string) =>
+    // eslint-disable-next-line no-useless-escape
+    str.replace(/!|@|%|\^|\*|\(|\)|\+|\=|\<|\>|\?|\/|,|\.|\:|\;|\'|\"|\&|\#|\[|\]|~|\$|_|`|-|{|}|\||\\/g, "")
+
+export const SPLIT_ID_PATTERN = " _id-"
+
+export const generateNameId = ({ name, id }: { name: string; id: string }) => {
+    return removeSpecialCharacter(name).replace(/\s/g, "-") + `${SPLIT_ID_PATTERN}${id}`
+}
+
+export const stringToObjectId = (str: string) => {
+    return new Types.ObjectId(str)
 }

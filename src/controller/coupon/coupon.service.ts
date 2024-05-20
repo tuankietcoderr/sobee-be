@@ -147,4 +147,13 @@ export class CouponService implements CouponRepository {
 
         return coupon
     }
+
+    async getToday(): Promise<ICoupon[]> {
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        return await Coupon.find({
+            startDate: { $lte: today },
+            endDate: { $gte: today }
+        })
+    }
 }

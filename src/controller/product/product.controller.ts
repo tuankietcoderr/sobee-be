@@ -1,29 +1,10 @@
+import middleware from "@/common/middleware"
+import { HttpStatusCode, SuccessfulResponse, asyncHandler } from "@/common/utils"
+import { ERole } from "@/enum"
 import { IProduct, IRoute } from "@/interface"
 import { Request, Response, Router } from "express"
 import { ProductService } from "./product.service"
-import { ErrorResponse, SuccessfulResponse } from "@/common/utils"
-import { HttpStatusCode } from "@/common/utils"
-import middleware from "@/common/middleware"
-import { ERole } from "@/enum"
-import { asyncHandler } from "@/common/utils"
 
-/**
- * @swagger
- * components:
- *  schemas:
- *    Product:
- *      type: object
- *      required:
- *          - category
- *          - name
- *          - price
- *          - quantity
- *      properties:
- *          _id:
- *              type: string
- *              description: The auto-generated id of the product
- *
- */
 export class ProductController implements IRoute {
     private readonly router: Router
     private readonly path: string
@@ -31,11 +12,13 @@ export class ProductController implements IRoute {
     private readonly PATHS = {
         ROOT: "/",
         PRODUCT: "/:productId",
-        GET_BY: "/:type/:productId", // type: slug, id, category
+        PUBLISHED: "/published",
+        DRAFT: "/draft",
         POPULAR: "/popular",
-        DISCOUNTED: "/discounted",
+        DISCOUNTED: "/discount",
         FEATURED: "/featured",
-        BEST_SELLER: "/best-seller"
+        BEST_SELLER: "/best-seller",
+        RELATED: "/related"
     }
 
     private static readonly productService = new ProductService()
@@ -54,13 +37,14 @@ export class ProductController implements IRoute {
             middleware.mustHaveFields<IProduct>(
                 "category",
                 "name",
-                "price",
+                "displayPrice",
                 "quantity",
                 "description",
-                "productAssetAttributes",
-                "slug"
+                "variants",
+                "type",
+                "thumbnail"
             ),
-            this.createProduct
+            asyncHandler(this.createProduct)
         )
         this.router.put(
             this.PATHS.PRODUCT,
@@ -77,13 +61,14 @@ export class ProductController implements IRoute {
             asyncHandler(this.deleteProduct)
         )
 
-        this.router.get(
-            this.PATHS.GET_BY,
-            middleware.verifyParams("productId", "type"),
-            asyncHandler(this.getProductBy)
-        )
+        this.router.get(this.PATHS.PUBLISHED, asyncHandler(this.getPublishedProducts))
 
-        this.router.get(this.PATHS.ROOT, asyncHandler(this.getProducts))
+        this.router.get(
+            this.PATHS.DRAFT,
+            middleware.verifyToken,
+            middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
+            asyncHandler(this.getDraftProducts)
+        )
 
         this.router.get(this.PATHS.POPULAR, asyncHandler(this.getPopularProducts))
 
@@ -92,36 +77,12 @@ export class ProductController implements IRoute {
         this.router.get(this.PATHS.FEATURED, asyncHandler(this.getFeaturedProducts))
 
         this.router.get(this.PATHS.BEST_SELLER, asyncHandler(this.getBestSellerProducts))
+
+        this.router.get(this.PATHS.RELATED, asyncHandler(this.getRelatedProducts))
+
+        this.router.get(this.PATHS.PRODUCT, asyncHandler(this.getProductById))
     }
 
-    /**
-    @swagger
-     * tags:
-     *      name: Product
-     *      description: Product management
-     * /api/product:
-     *      post:
-     *          tags: [Product]
-     *          summary: Create a new product
-     *          description: Create a new product
-     *          security:
-     *             - bearerAuth: []
-     *          requestBody:
-     *              required: true
-     *              content:
-     *                  multipart/form-data:
-     *                      schema:
-     *                          $ref: '#/components/schemas/Product'
-     *          responses:
-     *              201:
-     *                  description: Create product successfully
-     *                  content:
-     *                      application/json:
-     *                          schema:
-     *                              $ref: '#/components/schemas/Product'
-     *              500:
-     *                  description: Internal server error
-     */
     private async createProduct(req: Request, res: Response) {
         const response = await ProductController.productService.create(req.body)
         new SuccessfulResponse(response, HttpStatusCode.CREATED, "Create product successfully").from(res)
@@ -139,15 +100,14 @@ export class ProductController implements IRoute {
         new SuccessfulResponse(response, HttpStatusCode.OK, "Delete product successfully").from(res)
     }
 
-    private async getProductBy(req: Request, res: Response) {
-        const { productId, type } = req.params
-        const response = await ProductController.productService.getBy(type, productId)
-        new SuccessfulResponse(response, HttpStatusCode.OK, "Get product successfully").from(res)
+    private async getPublishedProducts(req: Request, res: Response) {
+        const response = await ProductController.productService.getPublishedProducts()
+        new SuccessfulResponse(response, HttpStatusCode.OK, "Get products successfully").from(res)
     }
 
-    private async getProducts(req: Request, res: Response) {
-        const response = await ProductController.productService.getAll()
-        new SuccessfulResponse(response, HttpStatusCode.OK, "Get products successfully").from(res)
+    private async getDraftProducts(req: Request, res: Response) {
+        const response = await ProductController.productService.getDraftProducts()
+        new SuccessfulResponse(response, HttpStatusCode.OK, "Get draft products successfully").from(res)
     }
 
     private async getPopularProducts(req: Request, res: Response) {
@@ -168,6 +128,18 @@ export class ProductController implements IRoute {
     private async getFeaturedProducts(req: Request, res: Response) {
         const response = await ProductController.productService.getFeatured()
         new SuccessfulResponse(response, HttpStatusCode.OK, "Get featured products successfully").from(res)
+    }
+
+    private async getRelatedProducts(req: Request, res: Response) {
+        const { categoryId } = req.params
+        const response = await ProductController.productService.getRelated(categoryId)
+        new SuccessfulResponse(response, HttpStatusCode.OK, "Get related products successfully").from(res)
+    }
+
+    private async getProductById(req: Request, res: Response) {
+        const { productId } = req.params
+        const response = await ProductController.productService.getOne("_id", productId)
+        new SuccessfulResponse(response, HttpStatusCode.OK, "Get product successfully").from(res)
     }
 
     getPath(): string {

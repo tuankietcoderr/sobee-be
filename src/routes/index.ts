@@ -1,7 +1,6 @@
 import { asyncHandler, errorHandlerMiddleware } from "@/common/utils"
 import {
     AddressController,
-    AttributeController,
     AuthController,
     BrandController,
     CardController,
@@ -19,7 +18,6 @@ import {
     PaymentAccountController,
     PaymentMethodController,
     PermissionController,
-    ProductAssetAttributeController,
     ProductController,
     ReviewController,
     RoleController,
@@ -28,14 +26,14 @@ import {
     TaxController,
     TermController,
     UploadController,
-    UserController
+    UserController,
+    AssetController
 } from "@/controller"
 import { Express } from "express"
 
 function getRoutes(app: Express) {
     const controllers = [
         new AddressController(),
-        new AttributeController(),
         new AuthController(),
         new CategoryController(),
         new ChatMessageController(),
@@ -49,7 +47,6 @@ function getRoutes(app: Express) {
         new PaymentMethodController(),
         new PermissionController(),
         new ProductController(),
-        new ProductAssetAttributeController(),
         new ReviewController(),
         new RoleController(),
         new StaffController(),
@@ -62,7 +59,8 @@ function getRoutes(app: Express) {
         new TermController(),
         new UploadController(),
         new CardController(),
-        new PaymentAccountController()
+        new PaymentAccountController(),
+        new AssetController()
     ]
 
     controllers.forEach((controller) => {
