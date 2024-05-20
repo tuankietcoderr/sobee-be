@@ -29,7 +29,7 @@ export class BrandController implements IRoute {
             asyncHandler(this.create)
         )
         this.router.put(this.PATHS.ID, this.router.use(middleware.verifyToken), asyncHandler(this.update))
-        this.router.use(middleware.verifyToken), this.router.delete(this.PATHS.ID, asyncHandler(this.delete))
+        this.router.delete(this.PATHS.ID, this.router.use(middleware.verifyToken), asyncHandler(this.delete))
         this.router.get(this.PATHS.ROOT, asyncHandler(this.findAll))
         this.router.get(this.PATHS.ID, asyncHandler(this.findById))
     }
