@@ -10,95 +10,95 @@ import { RefreshTokenRequest } from "./dto/refreshToken.dto"
 import { asyncHandler } from "@/common/utils"
 
 export class AuthController implements IRoute {
-    private router: Router
-    private path: string
-    private readonly PATHS = {
-        REGISTER: "/register",
-        LOGIN: "/login",
-        REFRESH_TOKEN: "/refresh-token",
-        LOG_OUT: "/logout",
-        ME: "/me",
-        CHANGE_PASSWORD: "/change-password"
-    }
+  private router: Router
+  private path: string
+  private readonly PATHS = {
+    REGISTER: "/register",
+    LOGIN: "/login",
+    REFRESH_TOKEN: "/refresh-token",
+    LOG_OUT: "/logout",
+    ME: "/me",
+    CHANGE_PASSWORD: "/change-password"
+  }
 
-    private static readonly authService = new AuthService()
+  private static readonly authService = new AuthService()
 
-    constructor(path = "/api/auth") {
-        this.router = Router()
-        this.path = path
-        this.initializeRoutes()
-    }
+  constructor(path = "/api/auth") {
+    this.router = Router()
+    this.path = path
+    this.initializeRoutes()
+  }
 
-    private initializeRoutes(): void {
-        this.router.post(
-            this.PATHS.REGISTER,
-            middleware.mustHaveFields<RegisterRequest>("email", "name", "password"),
-            asyncHandler(this.register)
-        )
+  private initializeRoutes(): void {
+    this.router.post(
+      this.PATHS.REGISTER,
+      middleware.mustHaveFields<RegisterRequest>("email", "name", "password"),
+      asyncHandler(this.register)
+    )
 
-        this.router.post(
-            this.PATHS.LOGIN,
-            middleware.mustHaveFields<LoginRequest>("emailOrPhone", "password"),
-            asyncHandler(this.login)
-        )
-        this.router.get(this.PATHS.ME, middleware.verifyToken, asyncHandler(this.me))
-        this.router.post(
-            this.PATHS.REFRESH_TOKEN,
-            middleware.mustHaveFields<RefreshTokenRequest>("refreshToken"),
-            middleware.verifyToken,
-            asyncHandler(this.handleRefreshToken)
-        )
-        this.router.post(this.PATHS.LOG_OUT, middleware.verifyToken, asyncHandler(this.logout))
-        this.router.put(
-            this.PATHS.CHANGE_PASSWORD,
-            middleware.verifyToken,
-            middleware.mustHaveFields("oldPassword", "newPassword"),
-            asyncHandler(this.changePassword)
-        )
-    }
+    this.router.post(
+      this.PATHS.LOGIN,
+      middleware.mustHaveFields<LoginRequest>("emailOrPhone", "password"),
+      asyncHandler(this.login)
+    )
+    this.router.get(this.PATHS.ME, middleware.verifyToken, asyncHandler(this.me))
+    this.router.post(
+      this.PATHS.REFRESH_TOKEN,
+      middleware.mustHaveFields<RefreshTokenRequest>("refreshToken"),
+      middleware.verifyToken,
+      asyncHandler(this.handleRefreshToken)
+    )
+    this.router.post(this.PATHS.LOG_OUT, middleware.verifyToken, asyncHandler(this.logout))
+    this.router.put(
+      this.PATHS.CHANGE_PASSWORD,
+      middleware.verifyToken,
+      middleware.mustHaveFields("oldPassword", "newPassword"),
+      asyncHandler(this.changePassword)
+    )
+  }
 
-    private async register(req: Request, res: Response) {
-        const response = await AuthController.authService.register(req.body)
-        new SuccessfulResponse(response, HttpStatusCode.CREATED, "Register successfully").from(res)
-    }
+  private async register(req: Request, res: Response) {
+    const response = await AuthController.authService.register(req.body)
+    new SuccessfulResponse(response, HttpStatusCode.CREATED, "Register successfully").from(res)
+  }
 
-    private async login(req: Request, res: Response) {
-        const response = await AuthController.authService.login(req.body)
-        new SuccessfulResponse(response, HttpStatusCode.OK, "Login successfully").from(res)
-    }
+  private async login(req: Request, res: Response) {
+    const response = await AuthController.authService.login(req.body)
+    new SuccessfulResponse(response, HttpStatusCode.OK, "Login successfully").from(res)
+  }
 
-    private async me(req: Request, res: Response) {
-        const response = await AuthController.authService.me({ userId: req.userId })
-        new SuccessfulResponse(response, HttpStatusCode.OK, "Get me successfully").from(res)
-    }
+  private async me(req: Request, res: Response) {
+    const response = await AuthController.authService.me({ userId: req.userId })
+    new SuccessfulResponse(response, HttpStatusCode.OK, "Get me successfully").from(res)
+  }
 
-    private async handleRefreshToken(req: Request, res: Response) {
-        const response = await AuthController.authService.handleRefreshToken(
-            { userId: req.userId, role: req.role },
-            req.body.refreshToken,
-            req.keyToken
-        )
-        new SuccessfulResponse(response, HttpStatusCode.OK, "Refresh token successfully").from(res)
-    }
+  private async handleRefreshToken(req: Request, res: Response) {
+    const response = await AuthController.authService.handleRefreshToken(
+      { userId: req.userId, role: req.role },
+      req.body.refreshToken,
+      req.keyToken
+    )
+    new SuccessfulResponse(response, HttpStatusCode.OK, "Refresh token successfully").from(res)
+  }
 
-    private async logout(req: Request, res: Response) {
-        const response = await AuthController.authService.logout(req.userId)
-        new SuccessfulResponse(response, HttpStatusCode.OK, "Logout successfully").from(res)
-    }
+  private async logout(req: Request, res: Response) {
+    const response = await AuthController.authService.logout(req.userId)
+    new SuccessfulResponse(response, HttpStatusCode.OK, "Logout successfully").from(res)
+  }
 
-    private async changePassword(req: Request, res: Response) {
-        const response = await AuthController.authService.changePassword({
-            ...req.body,
-            userId: req.userId
-        })
-        new SuccessfulResponse(response, HttpStatusCode.OK, "Change password successfully").from(res)
-    }
+  private async changePassword(req: Request, res: Response) {
+    const response = await AuthController.authService.changePassword({
+      ...req.body,
+      userId: req.userId
+    })
+    new SuccessfulResponse(response, HttpStatusCode.OK, "Change password successfully").from(res)
+  }
 
-    getPath(): string {
-        return this.path
-    }
+  getPath(): string {
+    return this.path
+  }
 
-    getRouter(): Router {
-        return this.router
-    }
+  getRouter(): Router {
+    return this.router
+  }
 }

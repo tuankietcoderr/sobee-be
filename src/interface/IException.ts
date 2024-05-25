@@ -1,10 +1,10 @@
 interface IException {
-    statusCode: number
+  statusCode: number
 
-    toJSON(): {
-        statusCode: number
-        message: string
-    }
+  toJSON(): {
+    statusCode: number
+    message: string
+  }
 }
 
 export { IException }

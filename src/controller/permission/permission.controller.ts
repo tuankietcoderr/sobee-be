@@ -3,26 +3,26 @@ import { PermissionService } from "./permission.service"
 import { Router } from "express"
 
 export class PermissionController implements IRoute {
-    private readonly router: Router
-    private readonly path: string
+  private readonly router: Router
+  private readonly path: string
 
-    private readonly PATHS = {}
+  private readonly PATHS = {}
 
-    private static readonly permissionService = new PermissionService()
+  private static readonly permissionService = new PermissionService()
 
-    constructor(path = "/api/permission") {
-        this.router = Router()
-        this.path = path
-        this.initializeRoutes()
-    }
+  constructor(path = "/api/permission") {
+    this.router = Router()
+    this.path = path
+    this.initializeRoutes()
+  }
 
-    private initializeRoutes(): void {}
+  private initializeRoutes(): void {}
 
-    getPath(): string {
-        return this.path
-    }
+  getPath(): string {
+    return this.path
+  }
 
-    getRouter(): Router {
-        return this.router
-    }
+  getRouter(): Router {
+    return this.router
+  }
 }

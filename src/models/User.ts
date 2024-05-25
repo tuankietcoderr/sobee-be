@@ -4,43 +4,43 @@ import { SCHEMA_NAME } from "./schema-name"
 import { ERole } from "@/enum"
 
 const UserSchema = new Schema<IUser>(
-    {
-        name: {
-            type: String,
-            required: true
-        },
-        avatar: {
-            type: String
-        },
-        email: {
-            type: String,
-            required: true,
-            unique: true
-        },
-        phoneNumber: {
-            type: String,
-            required: true,
-            unique: true
-        },
-        dateOfBirth: {
-            type: Date,
-            default: null
-        },
-        role: {
-            type: String,
-            enum: Object.values(ERole),
-            required: true
-        },
-        _user: {
-            type: Schema.Types.ObjectId,
-            refPath: "role",
-            default: null
-        }
+  {
+    name: {
+      type: String,
+      required: true
     },
-    {
-        versionKey: false,
-        timestamps: true
+    avatar: {
+      type: String
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true
+    },
+    phoneNumber: {
+      type: String,
+      required: true,
+      unique: true
+    },
+    dateOfBirth: {
+      type: Date,
+      default: null
+    },
+    role: {
+      type: String,
+      enum: Object.values(ERole),
+      required: true
+    },
+    _user: {
+      type: Schema.Types.ObjectId,
+      refPath: "role",
+      default: null
     }
+  },
+  {
+    versionKey: false,
+    timestamps: true
+  }
 )
 
 export default model<IUser>(SCHEMA_NAME.USERS, UserSchema, SCHEMA_NAME.USERS)

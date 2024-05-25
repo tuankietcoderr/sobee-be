@@ -9,117 +9,117 @@ import { hashPassword } from "@/common/utils"
 import { ERole } from "@/enum"
 
 export class StaffService implements StaffRepository {
-    private authService: AuthService
+  private authService: AuthService
 
-    constructor() {
-        this.authService = new AuthService()
+  constructor() {
+    this.authService = new AuthService()
+  }
+
+  async getAll(): Promise<IUser<IStaff>[]> {
+    return await User.find(
+      {
+        role: ERole.STAFF
+      },
+      {},
+      {
+        populate: {
+          path: "_user",
+          populate: {
+            path: "staffRole",
+            select: "role_name"
+          }
+        }
+      }
+    )
+  }
+  async getOne<T = string>(key: keyof IUser<IStaff>, value: T): Promise<IUser<IStaff>> {
+    const staff = await User.findOne(
+      { [key]: value },
+      {},
+      {
+        populate: {
+          path: "_user",
+          populate: {
+            path: "staffRole"
+          }
+        }
+      }
+    )
+
+    if (!staff) {
+      throw new ObjectModelNotFoundException()
     }
 
-    async getAll(): Promise<IUser<IStaff>[]> {
-        return await User.find(
-            {
-                role: ERole.STAFF
-            },
-            {},
-            {
-                populate: {
-                    path: "_user",
-                    populate: {
-                        path: "staffRole",
-                        select: "role_name"
-                    }
-                }
-            }
-        )
-    }
-    async getOne<T = string>(key: keyof IUser<IStaff>, value: T): Promise<IUser<IStaff>> {
-        const staff = await User.findOne(
-            { [key]: value },
-            {},
-            {
-                populate: {
-                    path: "_user",
-                    populate: {
-                        path: "staffRole"
-                    }
-                }
-            }
-        )
+    return staff as IUser<IStaff>
+  }
 
-        if (!staff) {
-            throw new ObjectModelNotFoundException()
-        }
+  async create(req: CreateStaffRequest): Promise<CreateStaffResponse> {
+    const { staffRole, identityCard, phoneNumber, email, password } = req
+    const user = await User.findOne({ $or: [{ phoneNumber }, { email }] })
 
-        return staff as IUser<IStaff>
+    if (user) {
+      throw new UserAlreadyExistsException()
     }
 
-    async create(req: CreateStaffRequest): Promise<CreateStaffResponse> {
-        const { staffRole, identityCard, phoneNumber, email, password } = req
-        const user = await User.findOne({ $or: [{ phoneNumber }, { email }] })
+    const newUser = new User(req)
 
-        if (user) {
-            throw new UserAlreadyExistsException()
-        }
+    const hashedPassword = await hashPassword(password!)
 
-        const newUser = new User(req)
+    const newCredential = new Credential({
+      userId: newUser._id,
+      password: hashedPassword
+    })
 
-        const hashedPassword = await hashPassword(password!)
+    const staff = new Staff({ staffRole, identityCard })
+    newUser._user = staff._id
 
-        const newCredential = new Credential({
-            userId: newUser._id,
-            password: hashedPassword
-        })
+    await newCredential.save()
+    await newUser.save()
+    await staff.save()
 
-        const staff = new Staff({ staffRole, identityCard })
-        newUser._user = staff._id
+    return newUser as CreateStaffResponse
+  }
 
-        await newCredential.save()
-        await newUser.save()
-        await staff.save()
+  async update(
+    staffId: string,
+    req: IUser<IStaff> & {
+      oldPassword?: string
+      newPassword?: string
+    }
+  ): Promise<IUser<IStaff>> {
+    delete req._id
+    const staff = await User.findByIdAndUpdate(staffId, { $set: req }, { new: true })
 
-        return newUser as CreateStaffResponse
+    if (!staff) {
+      throw new ObjectModelNotFoundException()
     }
 
-    async update(
-        staffId: string,
-        req: IUser<IStaff> & {
-            oldPassword?: string
-            newPassword?: string
-        }
-    ): Promise<IUser<IStaff>> {
-        delete req._id
-        const staff = await User.findByIdAndUpdate(staffId, { $set: req }, { new: true })
+    const _staff = await Staff.findByIdAndUpdate(staff._user, { $set: req }, { new: true })
 
-        if (!staff) {
-            throw new ObjectModelNotFoundException()
-        }
-
-        const _staff = await Staff.findByIdAndUpdate(staff._user, { $set: req }, { new: true })
-
-        if (!_staff) {
-            throw new ObjectModelNotFoundException()
-        }
-
-        if (req.oldPassword && req.newPassword) {
-            await this.authService.changePassword({
-                userId: staff._id.toString(),
-                oldPassword: req.oldPassword,
-                newPassword: req.newPassword
-            })
-        }
-
-        return staff as IUser<IStaff>
+    if (!_staff) {
+      throw new ObjectModelNotFoundException()
     }
 
-    async delete(staffId: string): Promise<DeleteResult> {
-        const staff = await User.findById(staffId)
-
-        if (!staff) {
-            throw new ObjectModelNotFoundException()
-        }
-
-        await Staff.findByIdAndDelete(staff._user)
-
-        return await staff.deleteOne()
+    if (req.oldPassword && req.newPassword) {
+      await this.authService.changePassword({
+        userId: staff._id.toString(),
+        oldPassword: req.oldPassword,
+        newPassword: req.newPassword
+      })
     }
+
+    return staff as IUser<IStaff>
+  }
+
+  async delete(staffId: string): Promise<DeleteResult> {
+    const staff = await User.findById(staffId)
+
+    if (!staff) {
+      throw new ObjectModelNotFoundException()
+    }
+
+    await Staff.findByIdAndDelete(staff._user)
+
+    return await staff.deleteOne()
+  }
 }

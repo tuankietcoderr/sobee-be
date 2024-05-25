@@ -17,7 +17,7 @@
 //     attributes: string
 // }
 export interface IPermission {
-    // role_name: string
-    // role_slug: string
-    // grant_lists: IGrantListItem[]
+  // role_name: string
+  // role_slug: string
+  // grant_lists: IGrantListItem[]
 }

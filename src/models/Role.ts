@@ -4,32 +4,32 @@ import { SCHEMA_NAME } from "./schema-name"
 import { ERolePermissions } from "@/common/utils/rbac"
 
 const RoleSchema = new Schema<IRole>({
-    role_name: {
+  role_name: {
+    type: String,
+    unique: true,
+    required: true
+  },
+  role_slug: {
+    type: String,
+    unique: true
+  },
+  grant_lists: [
+    {
+      resource: {
         type: String,
-        unique: true,
         required: true
-    },
-    role_slug: {
+      },
+      actions: {
+        type: [String],
+        enum: ERolePermissions,
+        required: true
+      },
+      attributes: {
         type: String,
-        unique: true
-    },
-    grant_lists: [
-        {
-            resource: {
-                type: String,
-                required: true
-            },
-            actions: {
-                type: [String],
-                enum: ERolePermissions,
-                required: true
-            },
-            attributes: {
-                type: String,
-                required: true
-            }
-        }
-    ]
+        required: true
+      }
+    }
+  ]
 })
 
 export default model<IRole>(SCHEMA_NAME.ROLES, RoleSchema, SCHEMA_NAME.ROLES)

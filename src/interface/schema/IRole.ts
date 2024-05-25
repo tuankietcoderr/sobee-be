@@ -12,15 +12,15 @@ import { Types } from "mongoose"
 //     {role: 'user', resource:'balance', action:'update:own', attributes:'*'}
 // ]
 export interface IGrantListItem {
-    role?: string
-    resource: string
-    actions: ERolePermissions[]
-    attributes: string
+  role?: string
+  resource: string
+  actions: ERolePermissions[]
+  attributes: string
 }
 export interface IRole {
-    _id?: string | Types.ObjectId
-    role_name: string
-    role_slug: string
-    grant_lists: IGrantListItem[]
-    __v?: number
+  _id?: string | Types.ObjectId
+  role_name: string
+  role_slug: string
+  grant_lists: IGrantListItem[]
+  __v?: number
 }
