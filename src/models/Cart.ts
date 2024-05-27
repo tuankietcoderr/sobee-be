@@ -1,15 +1,11 @@
 import { ICart } from "@/interface"
 import { Schema, model } from "mongoose"
 import { SCHEMA_NAME } from "./schema-name"
+import { OrderItemSchema } from "./OrderItem"
 
 const CartSchema = new Schema<ICart>(
   {
-    cartItems: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: SCHEMA_NAME.ORDER_ITEMS
-      }
-    ],
+    cartItems: [OrderItemSchema],
     customer: {
       type: Schema.Types.ObjectId,
       ref: SCHEMA_NAME.USERS

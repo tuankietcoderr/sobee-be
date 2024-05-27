@@ -26,4 +26,6 @@ const OrderItemSchema = new Schema<IOrderItem>(
   }
 )
 
+export { OrderItemSchema }
+
 export default model<IOrderItem>(SCHEMA_NAME.ORDER_ITEMS, OrderItemSchema, SCHEMA_NAME.ORDER_ITEMS)

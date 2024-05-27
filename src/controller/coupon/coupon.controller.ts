@@ -64,17 +64,20 @@ export class CouponController implements IRoute {
     this.router.get(this.PATHS.COUPON, asyncHandler(this.getCoupon))
     this.router.put(
       this.PATHS.ACTIVE,
+      middleware.verifyToken,
       middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
       asyncHandler(this.activeCoupon)
     )
     this.router.put(
       this.PATHS.DEACTIVE,
+      middleware.verifyToken,
       middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
       asyncHandler(this.deactiveCoupon)
     )
-    this.router.put(this.PATHS.USE, asyncHandler(this.useCoupon))
+
     this.router.post(
       this.PATHS.VALIDATE,
+      middleware.verifyToken,
       middleware.mustHaveFields<{ code: string; orderProducts: string[]; orderValue: number }>("code", "orderValue"),
       asyncHandler(this.validateCoupon)
     )
@@ -118,11 +121,6 @@ export class CouponController implements IRoute {
   private async deactiveCoupon(req: Request, res: Response): Promise<void> {
     const data = await CouponController.couponService.deactiveCoupon(req.params.couponId)
     new SuccessfulResponse(data, HttpStatusCode.OK, "Coupon deactivated successfully").from(res)
-  }
-
-  private async useCoupon(req: Request, res: Response): Promise<void> {
-    const data = await CouponController.couponService.use(req.params.couponId, req.userId)
-    new SuccessfulResponse(data, HttpStatusCode.OK, "Coupon used successfully").from(res)
   }
 
   private async validateCoupon(req: Request, res: Response): Promise<void> {

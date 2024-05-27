@@ -25,6 +25,13 @@ export class ProductService implements ProductRepository {
       {
         path: "brand",
         select: "name logo"
+      },
+      {
+        path: "tax",
+        select: "name rate"
+      },
+      {
+        path: "shippingFee"
       }
     ]
   }
@@ -35,7 +42,7 @@ export class ProductService implements ProductRepository {
   }
 
   async create(req: CreateProductRequest): Promise<IProduct> {
-    const { category, variants, type, brand } = req
+    const { category, variants = [], type, brand } = req
     const _variants = variants as IVariant[]
     await this.categoryService.getOne("_id", category.toString())
     brand && (await this.brandService.getOne("_id", brand.toString()))
@@ -77,9 +84,8 @@ export class ProductService implements ProductRepository {
 
     data.brand = data.brand || undefined
 
-    if (type === EProductType.SIMPLE && product.variants.length > 0) {
+    if (!product.isVariation && product.variants.length > 0) {
       data.variants = []
-      console.log(product.variants)
     } else {
       if (variants) {
         const _variants = variants as IVariant[]
@@ -230,6 +236,13 @@ export class ProductService implements ProductRepository {
           {
             path: "brand",
             select: "name logo website"
+          },
+          {
+            path: "tax",
+            select: "name rate"
+          },
+          {
+            path: "shippingFee"
           }
         ]
       }

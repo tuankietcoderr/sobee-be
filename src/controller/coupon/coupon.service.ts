@@ -125,7 +125,8 @@ export class CouponService implements CouponRepository {
         )
       }
     }
-    if (coupon.customerUsed.includes(userId as any)) throw new BadRequestResponse("Coupon already used")
+    console.log(coupon.customerUsed.toString(), userId)
+    if (coupon.customerUsed.toString().includes(userId)) throw new BadRequestResponse("Coupon already used")
 
     return coupon
   }
@@ -134,6 +135,8 @@ export class CouponService implements CouponRepository {
     const coupon = await Coupon.findOne({ code })
 
     if (!coupon) throw new ObjectModelNotFoundException("Coupon not found")
+
+    if (coupon.customerUsed.includes(userId as any)) throw new BadRequestResponse("Coupon already used")
 
     coupon.customerUsed.push(userId as any)
 

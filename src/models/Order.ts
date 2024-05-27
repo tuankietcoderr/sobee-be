@@ -1,7 +1,8 @@
+import { EOrderStatus, EPaymentMethod } from "@/enum"
 import { IOrder } from "@/interface"
 import { Schema, model } from "mongoose"
 import { SCHEMA_NAME } from "./schema-name"
-import { EOrderStatus } from "@/enum"
+import { OrderItemSchema } from "./OrderItem"
 
 const OrderSchema = new Schema<IOrder>(
   {
@@ -31,15 +32,11 @@ const OrderSchema = new Schema<IOrder>(
       required: true,
       unique: true
     },
-    orderItems: [
-      {
-        ref: SCHEMA_NAME.ORDER_ITEMS,
-        type: Schema.Types.ObjectId
-      }
-    ],
+    orderItems: [OrderItemSchema],
     paymentMethod: {
       type: String,
-      required: true
+      enum: Object.values(EPaymentMethod),
+      default: EPaymentMethod.COD
     },
     shippingAddress: {
       type: Schema.Types.ObjectId,
@@ -57,7 +54,10 @@ const OrderSchema = new Schema<IOrder>(
     total: {
       type: Number,
       required: true
-    }
+    },
+    emailAdress: String,
+    phoneNumber: String,
+    taxFee: Number
   },
   {
     versionKey: false,

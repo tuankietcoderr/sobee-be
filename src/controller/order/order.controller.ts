@@ -33,6 +33,8 @@ export class OrderController implements IRoute {
       asyncHandler(this.updateOrderItemQuantity)
     )
     this.router.post(this.PATHS.ORDER, middleware.mustHaveFields<IOrder>("orderItems"), asyncHandler(this.createOrder))
+    this.router.get(this.PATHS.ORDER_ITEM, asyncHandler(this.getOrderItemsByCustomer))
+    this.router.get(this.PATHS.ORDER, asyncHandler(this.getOrdersByCustomer))
   }
 
   private async addOrderItem(req: Request, res: Response): Promise<void> {
@@ -44,8 +46,8 @@ export class OrderController implements IRoute {
   }
 
   private async removeOrderItem(req: Request, res: Response): Promise<void> {
-    await OrderController.orderService.removeOrderItem(req.params.id)
-    new SuccessfulResponse(null, HttpStatusCode.NO_CONTENT, "Order item removed successfully").from(res)
+    const data = await OrderController.orderService.removeOrderItem(req.params.id)
+    new SuccessfulResponse(data, HttpStatusCode.OK, "Order item removed successfully").from(res)
   }
 
   private async updateOrderItemQuantity(req: Request, res: Response): Promise<void> {
@@ -59,6 +61,16 @@ export class OrderController implements IRoute {
       customer: req.userId
     })
     new SuccessfulResponse(order, HttpStatusCode.CREATED, "Order created successfully").from(res)
+  }
+
+  private async getOrderItemsByCustomer(req: Request, res: Response): Promise<void> {
+    const orderItems = await OrderController.orderService.getOrderItemsByCustomer(req.userId)
+    new SuccessfulResponse(orderItems, HttpStatusCode.OK).from(res)
+  }
+
+  private async getOrdersByCustomer(req: Request, res: Response): Promise<void> {
+    const orders = await OrderController.orderService.getOrdersByCustomer(req.userId)
+    new SuccessfulResponse(orders, HttpStatusCode.OK).from(res)
   }
 
   getPath(): string {

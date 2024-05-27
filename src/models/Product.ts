@@ -88,12 +88,47 @@ const ProductSchema = new Schema<IProduct>(
       type: Number,
       default: 0
     },
-    thumbnail: String
+    thumbnail: String,
+    shippingFee: {
+      ref: SCHEMA_NAME.SHIPPINGS,
+      type: Schema.Types.ObjectId
+    },
+    tax: {
+      ref: SCHEMA_NAME.TAX,
+      type: Schema.Types.ObjectId
+    }
   },
   {
     versionKey: false,
     timestamps: true
   }
 )
+
+ProductSchema.pre("save", function (next) {
+  if (this.discount > 0) {
+    this.isDiscount = true
+  } else {
+    this.isDiscount = false
+  }
+  if (this.variants.length > 0) {
+    this.isVariation = true
+  }
+  next()
+})
+
+ProductSchema.pre("updateOne", function (next) {
+  if (this.get("discount") > 0) {
+    this.set("isDiscount", true)
+  } else {
+    this.set("isDiscount", false)
+  }
+
+  if (this.get("variants").length > 0) {
+    this.set("isVariation", true)
+  } else {
+    this.set("isVariation", false)
+  }
+  next()
+})
 
 export default model<IProduct>(SCHEMA_NAME.PRODUCTS, ProductSchema, SCHEMA_NAME.PRODUCTS)

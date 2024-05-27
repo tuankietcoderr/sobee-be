@@ -43,9 +43,10 @@ export class ProductController implements IRoute {
         "displayPrice",
         "quantity",
         "description",
-        "variants",
         "type",
-        "thumbnail"
+        "thumbnail",
+        "tax",
+        "shippingFee"
       ),
       asyncHandler(this.createProduct)
     )

@@ -47,9 +47,10 @@ export class OrderService implements OrderRepository {
       subTotal = productVariant.price * amount
     } else {
       subTotal = product.displayPrice * data.amount
-      product.quantity -= data.amount
       price = product.displayPrice
     }
+
+    product.quantity -= data.amount
 
     if (product.isDiscount) {
       subTotal -= subTotal * product.discount
@@ -73,6 +74,14 @@ export class OrderService implements OrderRepository {
       throw new ObjectModelNotFoundException("Order item not found")
     }
 
+    const orderItemInOrders = await Order.findOne({
+      "orderItems._id": id
+    })
+
+    if (orderItemInOrders) {
+      return await orderItem.deleteOne()
+    }
+
     const product = await Product.findById(orderItem.product)
     if (!product) {
       throw new ObjectModelNotFoundException("Product not found")
@@ -81,14 +90,20 @@ export class OrderService implements OrderRepository {
     if (product.isVariation) {
       const { color, size, amount } = orderItem
 
-      const productVariant = product.variants.find((v) => v.color === color && v.size === size)
+      const productVariantIndex = product.variants.findIndex((v) => v.color === color && v.size === size)
 
-      if (!productVariant) {
+      if (productVariantIndex === -1) {
         throw new ObjectModelNotFoundException("Product variant not found")
       }
 
+      const productVariant = product.variants[productVariantIndex]
+
       productVariant.amount += amount
+
+      product.variants[productVariantIndex] = productVariant
     }
+
+    product.quantity += orderItem.amount
 
     const deleted = await orderItem.deleteOne()
 
@@ -114,11 +129,13 @@ export class OrderService implements OrderRepository {
     if (product.isVariation) {
       const { color, size, amount } = orderItem
 
-      const productVariant = product.variants.find((v) => v.color === color && v.size === size)
+      const productVariantIndex = product.variants.findIndex((v) => v.color === color && v.size === size)
 
-      if (!productVariant) {
+      if (productVariantIndex === -1) {
         throw new ObjectModelNotFoundException("Product variant not found")
       }
+
+      const productVariant = product.variants[productVariantIndex]
 
       if (productVariant.amount < quantity) {
         throw new ObjectModelOperationException("Product variant not enough")
@@ -128,10 +145,15 @@ export class OrderService implements OrderRepository {
       productVariant.amount += quantity
       orderItem.amount = quantity
 
-      subTotal = productVariant.price * quantity
+      product.variants[productVariantIndex] = productVariant
+
+      subTotal = orderItem.price * quantity
     } else {
       subTotal = product.displayPrice * quantity
+      orderItem.amount = quantity
     }
+
+    product.quantity += orderItem.amount - quantity
 
     if (product.isDiscount) {
       subTotal -= (subTotal * product.discount) / 100
@@ -147,22 +169,17 @@ export class OrderService implements OrderRepository {
   }
 
   async createOrder(data: IOrder): Promise<IOrder> {
-    const orderItems = data.orderItems as IOrderItem[]
-
-    let total = orderItems.reduce((acc, item) => {
-      return acc + item.subTotal
-    }, 0)
-
     if (data.coupon) {
       const coupon = await this.couponService.use(data.coupon.toString(), data.customer.toString())
-      if (coupon.type === ECouponType.FIXED) {
-        total -= coupon.discountValue
-      } else {
-        total -= total * (coupon.discountValue / 100)
-      }
+      data.coupon = coupon._id!
     }
 
-    const order = new Order({ ...data, total })
+    const orderItems = await OrderItem.find({ customer: data.customer, _id: { $in: data.orderItems } }).lean()
+
+    const order = new Order({
+      ...data,
+      orderItems
+    })
 
     order.orderGeneratedId = generateOrderId()
 
@@ -181,7 +198,16 @@ export class OrderService implements OrderRepository {
         populate: [
           {
             path: "product",
-            select: "name thumbnail"
+            select: "name thumbnail isVariation slug shippingFee tax isDiscount discount",
+            populate: [
+              {
+                path: "shippingFee"
+              },
+              {
+                path: "tax",
+                select: "name rate"
+              }
+            ]
           }
         ]
       }
@@ -189,5 +215,14 @@ export class OrderService implements OrderRepository {
     return orderItems
   }
 
-  // async getOrdersByCustomer(customerId: string): Promise<IOrder[]> {}
+  async getOrdersByCustomer(customerId: string): Promise<IOrder[]> {
+    const orders = await Order.find(
+      {
+        customer: customerId
+      },
+      {},
+      {}
+    )
+    return orders
+  }
 }

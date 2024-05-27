@@ -5,6 +5,7 @@ import { IUser } from "./IUser"
 import { EProductSize } from "@/enum"
 
 export interface IOrderItem {
+  _id?: string | Types.ObjectId
   product: Types.ObjectId | IProduct | string
   size: EProductSize
   color: string
