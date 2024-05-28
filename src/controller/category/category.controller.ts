@@ -13,7 +13,8 @@ export class CategoryController implements IRoute {
   private readonly PATHS = {
     ROOT: "/",
     CATEGORY: "/:categoryId",
-    PRODUCT: "/:categoryId/product"
+    PRODUCT: "/:categoryId/product",
+    WITH_PRODUCT: "/product"
   }
 
   private static readonly categoryService = new CategoryService()
@@ -49,6 +50,8 @@ export class CategoryController implements IRoute {
 
     this.router.get(this.PATHS.ROOT, asyncHandler(this.getAllCategories))
 
+    this.router.get(this.PATHS.WITH_PRODUCT, asyncHandler(this.getCategoryAndProducts))
+
     this.router.get(this.PATHS.CATEGORY, asyncHandler(this.getCategoryBy))
 
     this.router.get(this.PATHS.PRODUCT, asyncHandler(this.getProductsByCategory))
@@ -81,6 +84,11 @@ export class CategoryController implements IRoute {
 
   private async getProductsByCategory(req: Request, res: Response): Promise<void> {
     const data = await CategoryController.categoryService.getProducts(req.params.categoryId)
+    new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
+  }
+
+  private async getCategoryAndProducts(req: Request, res: Response): Promise<void> {
+    const data = await CategoryController.categoryService.getCategoryAndProducts()
     new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
   }
 

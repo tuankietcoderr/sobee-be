@@ -10,7 +10,9 @@ export class BrandController implements IRoute {
 
   private readonly PATHS = {
     ROOT: "/",
-    ID: "/:id"
+    ID: "/:id",
+    WITH_PRODUCTS: "/product",
+    PRODUCT: "/:id/product"
   }
 
   private static readonly brandService = new BrandService()
@@ -31,6 +33,8 @@ export class BrandController implements IRoute {
     this.router.put(this.PATHS.ID, middleware.verifyToken, asyncHandler(this.update))
     this.router.delete(this.PATHS.ID, middleware.verifyToken, asyncHandler(this.delete))
     this.router.get(this.PATHS.ROOT, asyncHandler(this.findAll))
+    this.router.get(this.PATHS.PRODUCT, asyncHandler(this.getBrandProducts))
+    this.router.get(this.PATHS.WITH_PRODUCTS, asyncHandler(this.getBrandAndProducts))
     this.router.get(this.PATHS.ID, asyncHandler(this.findById))
   }
 
@@ -56,6 +60,16 @@ export class BrandController implements IRoute {
 
   async findById(req: Request, res: Response): Promise<void> {
     const data = await BrandController.brandService.findById(req.params.id)
+    new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
+  }
+
+  private async getBrandProducts(req: Request, res: Response): Promise<void> {
+    const data = await BrandController.brandService.getProducts(req.params.id)
+    new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
+  }
+
+  private async getBrandAndProducts(req: Request, res: Response): Promise<void> {
+    const data = await BrandController.brandService.getBrandAndProducts()
     new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
   }
 
