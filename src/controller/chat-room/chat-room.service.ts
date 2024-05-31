@@ -13,16 +13,26 @@ export class ChatRoomService implements ChatRoomRepository {
     return deleted
   }
   async getRoomById(id: string): Promise<IChatRoom> {
-    const room = await ChatRoom.findById(id)
+    const room = await ChatRoom.findById(id).populate("customer.user staff.user order product")
     if (!room) throw new ObjectModelNotFoundException()
     return room
   }
   async getRoomsByUser(userId: string): Promise<IChatRoom[]> {
-    const rooms = await ChatRoom.find({ users: { $elemMatch: { $eq: userId } } })
-    return rooms
+    const rooms = await ChatRoom.find({
+      $or: [{ "customer.user": userId }, { "staff.user": userId }]
+    }).populate("customer.user staff.user order product")
+
+    const updateRooms = rooms.map((room) => {
+      if (room.isHaveNew && room.lastMessage.sender.toString() == userId) {
+        room.isHaveNew = false
+      }
+      return room
+    })
+
+    return updateRooms
   }
   async getAll(): Promise<IChatRoom[]> {
-    const rooms = await ChatRoom.find()
+    const rooms = await ChatRoom.find().populate("customer.user staff.user order product").lean()
     return rooms
   }
 }

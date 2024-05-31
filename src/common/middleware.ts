@@ -1,5 +1,5 @@
 import { ERole } from "@/enum"
-import { IMiddleware } from "@/interface"
+import { IMiddleware, IRole, IStaff, IUser } from "@/interface"
 import User from "@/models/User"
 import { NextFunction, Request, Response } from "express"
 import jwt, { JwtPayload } from "jsonwebtoken"
@@ -8,6 +8,7 @@ import KeyTokenService from "./utils/keyToken"
 import { EActionPermissions, ac } from "./utils/rbac"
 import { Model } from "mongoose"
 import { RoleService } from "@/controller"
+import { Permission } from "accesscontrol"
 
 const HEADER = {
   AUTHORIZATION: "Authorization",
@@ -64,10 +65,33 @@ class Middleware implements IMiddleware {
       req.role = decoded.role
       req.keyToken = keyStore
 
-      const user = await User.findById(decoded.userId).lean()
+      let user: IUser | null = null
+
+      if (decoded.role === ERole.STAFF) {
+        user = await User.findById(
+          decoded.userId,
+          {},
+          {
+            populate: {
+              path: "_user",
+              select: "staffRole",
+              populate: {
+                path: "staffRole",
+                select: "role_name"
+              }
+            }
+          }
+        ).lean()
+
+        req.staffRole = ((user?._user as IStaff)?.staffRole as IRole)?.role_name
+      } else {
+        user = await User.findById(decoded.userId).lean()
+      }
+
       if (!user) {
         return new ErrorResponse(HttpStatusCode.UNAUTHORIZED, "User not found").from(res)
       }
+
       next()
     } catch (err: any) {
       if (err instanceof jwt.TokenExpiredError && req.path !== "/refresh-token") {
@@ -220,7 +244,16 @@ class Middleware implements IMiddleware {
       }
 
       //check if the role has the permission to access the resource
-      const permission = ac.can(role)[action](resource)
+      let permission: Permission
+
+      if (role === ERole.STAFF) {
+        if (!req.staffRole) {
+          return new ErrorResponse(HttpStatusCode.FORBIDDEN, "Access denied").from(res)
+        }
+        permission = ac.can(req.staffRole as string)[action](resource)
+      } else {
+        permission = ac.can(role)[action](resource)
+      }
 
       //if the permission is not granted, return an error
       if (!permission.granted) {

@@ -4,10 +4,11 @@ import { BadRequestResponse, SuccessfulResponse } from "@/common/utils"
 import { NotificationService } from "@/controller"
 import { ENotificationType } from "@/enum"
 import { Socket } from "socket.io"
-import sendChatMessage from "./chat/sendChatMessage"
+import handleChat from "./chat"
+import userSocketList from "./chat/userSocketList"
 
 export default function getSocketRoutes(socket: Socket) {
-  sendChatMessage(socket)
+  handleChat(socket)
 
   const notificationService = new NotificationService()
 
@@ -23,16 +24,20 @@ export default function getSocketRoutes(socket: Socket) {
       socket,
       serverEvent: async (data: { text: string }) => {
         if (data.text !== "OK") throw new BadRequestResponse("Text is not OK")
-        return new SuccessfulResponse({ text: "Pong", user: socket.data }, 200, "Connection is ok").fromSocket(
-          socket,
-          "pong"
-        )
+        console.log(userSocketList.getUserList())
+
+        return new SuccessfulResponse(
+          { text: "Pong", user: Object.fromEntries(userSocketList.getUserList()) },
+          200,
+          "Connection is ok"
+        ).fromSocket(socket, "pong")
       }
     })
   )
 
   socket.on(SOCKET_CLIENT_MESSAGE.DISCONNECT, () => {
     console.log(`User ${socket.id} disconnected`)
+    userSocketList.removeSocket(socket.data.userId)
     socket.emit("push-notification", {
       type: ENotificationType.INFO,
       content: `User ${socket.id} disconnected`,
