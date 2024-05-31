@@ -9,10 +9,6 @@ const ChatMessageSchema = new Schema<IChatMessage>(
       type: String,
       required: true
     },
-    read: {
-      type: Boolean,
-      default: false
-    },
     receiver: {
       type: Schema.Types.ObjectId,
       ref: SCHEMA_NAME.USERS
@@ -25,6 +21,9 @@ const ChatMessageSchema = new Schema<IChatMessage>(
       type: String,
       enum: Object.values(EAssetType),
       default: EAssetType.RAW_TEXT
+    },
+    assets: {
+      type: [String]
     }
   },
   {
@@ -33,4 +32,5 @@ const ChatMessageSchema = new Schema<IChatMessage>(
   }
 )
 
-export default model<IChatMessage>(SCHEMA_NAME.CHAT_MESSAGES, ChatMessageSchema, SCHEMA_NAME.CHAT_MESSAGES)
+// export default model<IChatMessage>(SCHEMA_NAME.CHAT_MESSAGES, ChatMessageSchema, SCHEMA_NAME.CHAT_MESSAGES)
+export { ChatMessageSchema }

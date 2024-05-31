@@ -6,6 +6,8 @@ export interface IChatMessage {
   content: string
   sender: string | Types.ObjectId | IUser
   receiver: string | Types.ObjectId | IUser
-  read: boolean
   contentType: EAssetType
+  assets?: string[]
+  createdAt?: Date
+  updatedAt?: Date
 }

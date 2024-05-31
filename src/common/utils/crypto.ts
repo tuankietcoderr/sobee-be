@@ -22,18 +22,23 @@ export const createTokenPair = async (
   privateKey: string
 ): Promise<{ accessToken: string; refreshToken: string }> => {
   return new Promise((resolve, reject) => {
-    jwt.sign(payload, publicKey, { expiresIn: "2 days" }, (err, accessToken) => {
+    jwt.sign(payload, publicKey, { expiresIn: process.env.ACCESS_TOKEN_EXPIRES_IN || "2 days" }, (err, accessToken) => {
       if (accessToken == undefined || err) {
         reject(err)
         throw new Error("Failed to create access token")
       }
-      jwt.sign(payload, privateKey, { expiresIn: "7 days" }, (err, refreshToken) => {
-        if (refreshToken == undefined || err) {
-          reject(err)
-          throw new Error("Failed to create refresh token")
+      jwt.sign(
+        payload,
+        privateKey,
+        { expiresIn: process.env.REFRESH_TOKEN_EXPIRES_IN || "7 days" },
+        (err, refreshToken) => {
+          if (refreshToken == undefined || err) {
+            reject(err)
+            throw new Error("Failed to create refresh token")
+          }
+          resolve({ accessToken, refreshToken })
         }
-        resolve({ accessToken, refreshToken })
-      })
+      )
     })
   })
   // const accessToken = jwt.sign(payload, publicKey, {

@@ -5,7 +5,8 @@ declare global {
       MONGODB_URI: string
       PORT: number
       ALLOWED_ORIGIN: string
-      JWT_EXPIRES_IN: string
+      ACCESS_TOKEN_EXPIRES_IN: string
+      REFRESH_TOKEN_EXPIRES_IN: string
       MINIO_ENDPOINT: string
       MINIO_PORT: string
       MINIO_ACCESS_KEY: string

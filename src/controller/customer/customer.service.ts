@@ -26,7 +26,7 @@ export class CustomerService implements CustomerRepository {
       userId: newUser._id,
       password: hashedPassword
     })
-    let objectUser = new Customer(req._user as ICustomer)
+    const objectUser = new Customer(req._user as ICustomer)
     newUser._user = objectUser._id
 
     await newCredential.save()
