@@ -42,8 +42,8 @@ export class ProductService implements ProductRepository {
   }
 
   async create(req: CreateProductRequest): Promise<IProduct> {
-    const { category, variants = [], type, brand } = req
-    const _variants = variants as IVariant[]
+    const { category, variants, type, brand } = req
+    const _variants = (variants as IVariant[]) || []
     await this.categoryService.getOne("_id", category.toString())
     brand && (await this.brandService.getOne("_id", brand.toString()))
     const minPrice = Math.min(..._variants.map((v) => v.price))
@@ -68,7 +68,8 @@ export class ProductService implements ProductRepository {
         throw new ObjectModelOperationException("Variable product must have at least one attribute")
       }
 
-      product.variants = []
+      product.variants = _variants
+      product.isVariation = true
     }
 
     await product.save()
