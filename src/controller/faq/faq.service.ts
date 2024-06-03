@@ -13,7 +13,7 @@ export class FaqService implements FaqRepository {
     if (!updated) throw new ObjectModelNotFoundException("FAQ not found")
     return updated
   }
-  async delete(id: string): Promise<Object> {
+  async delete(id: string): Promise<any> {
     const foundFaq = await Faq.findById(id)
     if (!foundFaq) throw new ObjectModelNotFoundException("FAQ not found")
     return await foundFaq.deleteOne()
