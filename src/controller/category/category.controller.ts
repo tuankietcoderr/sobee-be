@@ -75,7 +75,7 @@ export class CategoryController implements IRoute {
 
   private async getAllCategories(req: Request, res: Response): Promise<void> {
     const page = parseInt(req.query.page?.toString() || "1")
-    const limit = parseInt(req.query.limit?.toString() || "10")
+    const limit = parseInt(req.query.limit?.toString() || "12")
     const totalData = await Category.countDocuments().exec()
 
     const data = await CategoryController.categoryService.getAll(page, limit)
@@ -89,14 +89,14 @@ export class CategoryController implements IRoute {
 
   private async getProductsByCategory(req: Request, res: Response): Promise<void> {
     const page = parseInt(req.query.page?.toString() || "1")
-    const limit = parseInt(req.query.limit?.toString() || "10")
+    const limit = parseInt(req.query.limit?.toString() || "12")
     const data = await CategoryController.categoryService.getProducts(req.params.categoryId, page, limit)
     new SuccessfulResponse(data.data, HttpStatusCode.OK).withPagination(res, page, limit, data.total)
   }
 
   private async getCategoryAndProducts(req: Request, res: Response): Promise<void> {
     const page = parseInt(req.query.page?.toString() || "1")
-    const limit = parseInt(req.query.limit?.toString() || "10")
+    const limit = parseInt(req.query.limit?.toString() || "12")
     const data = await CategoryController.categoryService.getCategoryAndProducts(page, limit)
     new SuccessfulResponse(data.data, HttpStatusCode.OK).withPagination(res, page, limit, data.total)
   }

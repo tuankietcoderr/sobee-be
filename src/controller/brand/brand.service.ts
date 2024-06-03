@@ -132,7 +132,7 @@ export class BrandService implements BrandRepository {
             as: "products",
             pipeline: [
               {
-                $limit: 10
+                $limit: 6
               },
               {
                 $lookup: {
@@ -182,8 +182,15 @@ export class BrandService implements BrandRepository {
           }
         },
         {
+          $addFields: {
+            productCount: {
+              $size: "$products"
+            }
+          }
+        },
+        {
           $sort: {
-            name: 1
+            productCount: -1
           }
         }
       ])

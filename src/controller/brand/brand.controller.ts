@@ -56,7 +56,7 @@ export class BrandController implements IRoute {
 
   async findAll(req: Request, res: Response): Promise<void> {
     const page = parseInt(req.query.page?.toString() || "1")
-    const limit = parseInt(req.query.limit?.toString() || "10")
+    const limit = parseInt(req.query.limit?.toString() || "12")
     const totalData = await Brand.countDocuments().exec()
     const data = await BrandController.brandService.findAll(page, limit)
     new SuccessfulResponse(data, HttpStatusCode.OK).withPagination(res, page, limit, totalData)
@@ -69,14 +69,14 @@ export class BrandController implements IRoute {
 
   private async getBrandProducts(req: Request, res: Response): Promise<void> {
     const page = parseInt(req.query.page?.toString() || "1")
-    const limit = parseInt(req.query.limit?.toString() || "10")
+    const limit = parseInt(req.query.limit?.toString() || "12")
     const data = await BrandController.brandService.getProducts(req.params.id, page, limit)
     new SuccessfulResponse(data.data, HttpStatusCode.OK).withPagination(res, page, limit, data.total)
   }
 
   private async getBrandAndProducts(req: Request, res: Response): Promise<void> {
     const page = parseInt(req.query.page?.toString() || "1")
-    const limit = parseInt(req.query.limit?.toString() || "10")
+    const limit = parseInt(req.query.limit?.toString() || "12")
     const data = await BrandController.brandService.getBrandAndProducts(page, limit)
     new SuccessfulResponse(data.data, HttpStatusCode.OK).withPagination(res, page, limit, data.total)
   }

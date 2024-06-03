@@ -253,7 +253,7 @@ export class CategoryService implements CategoryRepository {
             as: "products",
             pipeline: [
               {
-                $limit: 10
+                $limit: 6
               },
               {
                 $lookup: {
@@ -303,8 +303,15 @@ export class CategoryService implements CategoryRepository {
           }
         },
         {
+          $addFields: {
+            productCount: {
+              $size: "$products"
+            }
+          }
+        },
+        {
           $sort: {
-            name: 1
+            productCount: -1
           }
         }
       ])

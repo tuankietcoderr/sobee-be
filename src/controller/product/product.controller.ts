@@ -125,7 +125,7 @@ export class ProductController implements IRoute {
 
   private async getPublishedProducts(req: Request, res: Response) {
     const page = parseInt(req.query.page?.toString() || "1")
-    const limit = parseInt(req.query.limit?.toString() || "10")
+    const limit = parseInt(req.query.limit?.toString() || "12")
     const totalData = await Product.countDocuments().exec()
     const response = await ProductController.productService.getPublishedProducts(req.query, page, limit)
     new SuccessfulResponse(response, HttpStatusCode.OK, "Get products successfully").withPagination(
@@ -191,7 +191,7 @@ export class ProductController implements IRoute {
 
   private async getAllProducts(req: Request, res: Response) {
     const page = parseInt(req.query.page?.toString() || "1")
-    const limit = parseInt(req.query.limit?.toString() || "10")
+    const limit = parseInt(req.query.limit?.toString() || "12")
     const response = await ProductController.productService.getAll(req.query, page, limit)
 
     new SuccessfulResponse(response.data, HttpStatusCode.OK, "Get all products successfully").withPagination(
