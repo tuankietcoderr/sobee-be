@@ -1,6 +1,6 @@
-import { IBrand, IProduct } from "@/interface"
+import { IBrand, IProduct, TotalAndData } from "@/interface"
 import { BrandRepository } from "./brand.repository"
-import { Brand, SCHEMA_NAME } from "@/models"
+import { Brand, Product, SCHEMA_NAME } from "@/models"
 import { ObjectModelNotFoundException } from "@/common/exceptions"
 import { stringToObjectId } from "@/common/utils"
 
@@ -21,8 +21,41 @@ export class BrandService implements BrandRepository {
     return brand
   }
 
-  async findAll(): Promise<IBrand[]> {
-    return await Brand.find().lean()
+  async findAll(page: number, limit: number): Promise<IBrand[]> {
+    const skip = (page - 1) * limit
+    const brandWithProductCount = await Brand.aggregate([
+      {
+        $lookup: {
+          from: SCHEMA_NAME.PRODUCTS,
+          localField: "_id",
+          foreignField: "brand",
+          as: "products"
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          slug: 1,
+          logo: 1,
+          products: 1
+        }
+      },
+      {
+        $addFields: {
+          productCount: {
+            $size: "$products"
+          }
+        }
+      },
+      { $limit: limit + skip },
+      { $skip: skip },
+      {
+        $project: {
+          products: 0
+        }
+      }
+    ])
+    return brandWithProductCount.sort((a, b) => b.productCount - a.productCount)
   }
 
   async findById(id: string): Promise<IBrand> {
@@ -37,129 +70,132 @@ export class BrandService implements BrandRepository {
     return brand
   }
 
-  async getProducts(id: string): Promise<
-    (IBrand & {
-      products: IProduct[]
-    })[]
-  > {
-    const data = await Brand.aggregate([
-      {
-        $match: {
-          _id: stringToObjectId(id)
-        }
-      },
-      {
-        $lookup: {
-          from: SCHEMA_NAME.PRODUCTS,
-          localField: "_id",
-          foreignField: "brand",
-          as: "products",
-          pipeline: [
+  async getProducts(id: string, page: number, limit: number): Promise<TotalAndData<IProduct>> {
+    const brand = await Brand.findById(id)
+    if (!brand) throw new ObjectModelNotFoundException("Brand not found")
+
+    const brandQuery = () =>
+      Product.find(
+        { brand: brand._id },
+        { description: 0 },
+        {
+          populate: [
             {
-              $lookup: {
-                from: SCHEMA_NAME.BRAND,
-                localField: "brand",
-                foreignField: "_id",
-                as: "brand",
-                pipeline: [
-                  {
-                    $project: {
-                      products: 0
-                    }
-                  }
-                ]
-              }
-            },
-            { $unwind: "$brand" },
-            {
-              $project: {
-                description: 0
-              }
+              path: "category",
+              select: "name"
             },
             {
-              $lookup: {
-                from: SCHEMA_NAME.CATEGORIES,
-                localField: "category",
-                foreignField: "_id",
-                as: "category",
-                pipeline: [
-                  {
-                    $project: {
-                      description: 0
-                    }
-                  }
-                ]
-              }
+              path: "variants"
             },
-            { $unwind: "$category" }
+            {
+              path: "brand",
+              select: "name logo"
+            },
+            {
+              path: "tax",
+              select: "name rate"
+            },
+            {
+              path: "shippingFee"
+            }
           ]
         }
-      }
-    ])
-    return data.length > 0 ? data[0] : null
+      )
+
+    const total = await brandQuery().countDocuments()
+    const data = await brandQuery()
+      .limit(limit)
+      .skip((page - 1) * limit)
+    return {
+      total,
+      data
+    }
   }
 
-  async getBrandAndProducts(): Promise<any[]> {
-    const productAndBrand = await Brand.aggregate([
-      {
-        $lookup: {
-          from: SCHEMA_NAME.PRODUCTS,
-          localField: "_id",
-          foreignField: "brand",
-          as: "products",
-          pipeline: [
-            {
-              $lookup: {
-                from: SCHEMA_NAME.BRAND,
-                localField: "brand",
-                foreignField: "_id",
-                as: "brand",
-                pipeline: [
-                  {
-                    $project: {
-                      products: 0
-                    }
-                  }
-                ]
-              }
-            },
-            { $unwind: "$brand" },
-            {
-              $project: {
-                description: 0
-              }
-            },
-            {
-              $lookup: {
-                from: SCHEMA_NAME.CATEGORIES,
-                localField: "category",
-                foreignField: "_id",
-                as: "category",
-                pipeline: [
-                  {
-                    $project: {
-                      description: 0
-                    }
-                  }
-                ]
-              }
-            },
-            { $unwind: "$category" }
-          ]
-        }
-      },
-      {
-        $project: {
-          name: 1,
-          products: 1
-        }
-      },
-      {
-        $sort: {
-          name: 1
-        }
+  async getBrandAndProducts(
+    page: number,
+    limit: number
+  ): Promise<
+    TotalAndData<
+      IBrand & {
+        products: IProduct[]
       }
-    ])
-    return productAndBrand
+    >
+  > {
+    const productAndCategory = () =>
+      Brand.aggregate([
+        {
+          $lookup: {
+            from: SCHEMA_NAME.PRODUCTS,
+            localField: "_id",
+            foreignField: "brand",
+            as: "products",
+            pipeline: [
+              {
+                $limit: 10
+              },
+              {
+                $lookup: {
+                  from: SCHEMA_NAME.BRAND,
+                  localField: "brand",
+                  foreignField: "_id",
+                  as: "brand",
+                  pipeline: [
+                    {
+                      $project: {
+                        products: 0
+                      }
+                    }
+                  ]
+                }
+              },
+              { $unwind: "$brand" },
+              {
+                $project: {
+                  description: 0
+                }
+              },
+              {
+                $lookup: {
+                  from: SCHEMA_NAME.CATEGORIES,
+                  localField: "category",
+                  foreignField: "_id",
+                  as: "category",
+                  pipeline: [
+                    {
+                      $project: {
+                        description: 0
+                      }
+                    }
+                  ]
+                }
+              },
+              { $unwind: "$category" }
+            ]
+          }
+        },
+        {
+          $project: {
+            name: 1,
+            slug: 1,
+            products: 1
+          }
+        },
+        {
+          $sort: {
+            name: 1
+          }
+        }
+      ])
+
+    const total = await Brand.countDocuments().exec()
+    const data = await productAndCategory()
+      .limit(limit + (page - 1) * limit)
+      .skip((page - 1) * limit)
+
+    return {
+      total,
+      data
+    }
   }
 }

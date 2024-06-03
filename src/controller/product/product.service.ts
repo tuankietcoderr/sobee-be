@@ -1,13 +1,13 @@
-import { IProduct, IVariant } from "@/interface"
+import { ObjectModelNotFoundException, ObjectModelOperationException } from "@/common/exceptions"
+import { generateNameId, getIdFromNameId } from "@/common/utils"
+import { EProductStatus, EProductType } from "@/enum"
+import { IProduct, IVariant, TotalAndData } from "@/interface"
+import { Product } from "@/models"
+import { DeleteResult } from "mongodb"
+import { BrandService } from "../brand"
+import { CategoryService } from "../category"
 import { CreateProductRequest } from "./dto"
 import { ProductRepository } from "./product.repository"
-import { CategoryService } from "../category"
-import { Product, SCHEMA_NAME } from "@/models"
-import { EProductType } from "@/enum"
-import { ObjectModelNotFoundException, ObjectModelOperationException } from "@/common/exceptions"
-import { BrandService } from "../brand"
-import { generateNameId, getIdFromNameId } from "@/common/utils"
-import { DeleteResult } from "mongodb"
 
 export class ProductService implements ProductRepository {
   private readonly categoryService: CategoryService
@@ -110,7 +110,7 @@ export class ProductService implements ProductRepository {
     return await product.deleteOne()
   }
 
-  async getPublishedProducts(query: any): Promise<IProduct[]> {
+  async getAll(query: any, page: number, limit: number): Promise<TotalAndData<IProduct>> {
     const priceRange = query.priceRange || null
     const keyword = query.keyword || null
     const categories = query.categories && query.categories !== "All" ? [query.categories].flat() : null
@@ -119,6 +119,131 @@ export class ProductService implements ProductRepository {
     const ratings = query.ratings && query.ratings !== "All" ? query.ratings : null
     const sortBy = (query.sortBy && query.sortBy) || "Newest"
     const isOnSale = query.isOnSale
+
+    const searchQueries = ["priceRange", "keyword", "categories", "colors", "sizes", "ratings", "sortBy", "isOnSale"]
+
+    const hasSearchQuery = searchQueries.some((q) => query[q])
+
+    const sorts = [
+      {
+        label: "Price: Low to High",
+        key: "displayPrice-asc"
+      },
+      {
+        label: "Price: High to Low",
+        key: "displayPrice-desc"
+      },
+      {
+        label: "Rating: Low to High",
+        key: "ratingValue-asc"
+      },
+      {
+        label: "Rating: High to Low",
+        key: "ratingValue-desc"
+      },
+      {
+        label: "Newest",
+        key: "createdAt-desc"
+      },
+      {
+        label: "Oldest",
+        key: "createdAt-asc"
+      },
+      {
+        label: "Best Selling",
+        key: "sold-desc"
+      },
+      {
+        label: "Most Popular",
+        key: "ratingCount-desc"
+      }
+    ]
+
+    const sort = sorts.find((s) => s.key === sortBy)
+    const [sortKey, dir] = sort?.key.split("-") ?? [null, null]
+
+    const productQuery = () =>
+      Product.find(
+        {
+          $and: [
+            {
+              isDraft: false,
+              status: EProductStatus.ACTIVE
+            },
+            hasSearchQuery
+              ? {
+                  $and: [
+                    priceRange
+                      ? {
+                          $or: [
+                            { displayPrice: { $gte: priceRange[0], $lte: priceRange[1] } },
+                            {
+                              maxPrice: { $gte: priceRange[0], $lte: priceRange[1] }
+                            }
+                          ]
+                        }
+                      : {},
+                    keyword ? { name: { $regex: keyword, $options: "i" } } : {},
+                    categories ? { category: { $in: categories } } : {},
+                    colors
+                      ? {
+                          "variants.color": { $in: colors }
+                        }
+                      : {},
+                    sizes ? { "variants.size": { $in: sizes } } : {},
+                    ratings ? { ratingValue: { $in: ratings } } : {},
+                    isOnSale !== "false" ? { isDiscount: true } : {}
+                  ]
+                }
+              : {}
+          ]
+        },
+        {
+          description: 0
+        },
+        {
+          ...this.generalPopulate,
+          sort: sortKey
+            ? {
+                [sortKey]: dir === "asc" ? 1 : -1
+              }
+            : {
+                isFeatured: -1,
+                discount: -1,
+                ratingValue: -1,
+                ratingCount: -1,
+                sold: -1,
+                displayPrice: 1,
+                favoritesBy: -1,
+                maxPrice: 1
+              }
+        }
+      )
+
+    const data = await productQuery()
+      .limit(limit)
+      .skip((page - 1) * limit)
+    const total = await productQuery().countDocuments()
+
+    return {
+      data,
+      total
+    }
+  }
+
+  async getPublishedProducts(query: any, page: number, limit: number): Promise<IProduct[]> {
+    const priceRange = query.priceRange || null
+    const keyword = query.keyword || null
+    const categories = query.categories && query.categories !== "All" ? [query.categories].flat() : null
+    const colors = query.colors && query.colors !== "All" ? [query.colors].flat().map((v) => `#${v}`) : null
+    const sizes = query.sizes && query.sizes !== "All" ? query.sizes : null
+    const ratings = query.ratings && query.ratings !== "All" ? query.ratings : null
+    const sortBy = (query.sortBy && query.sortBy) || "Newest"
+    const isOnSale = query.isOnSale
+
+    const searchQueries = ["priceRange", "keyword", "categories", "colors", "sizes", "ratings", "sortBy", "isOnSale"]
+
+    const hasSearchQuery = searchQueries.some((q) => query[q])
 
     const sorts = [
       {
@@ -162,7 +287,7 @@ export class ProductService implements ProductRepository {
       {
         $and: [
           { isDraft: false },
-          JSON.stringify(query) !== "{}"
+          hasSearchQuery
             ? {
                 $and: [
                   priceRange
@@ -190,7 +315,9 @@ export class ProductService implements ProductRepository {
             : {}
         ]
       },
-      {},
+      {
+        description: 0
+      },
       {
         ...this.generalPopulate,
         sort: {
@@ -198,6 +325,8 @@ export class ProductService implements ProductRepository {
         }
       }
     )
+      .limit(limit)
+      .skip((page - 1) * limit)
   }
 
   async getDraftProducts(): Promise<IProduct[]> {

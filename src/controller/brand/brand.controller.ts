@@ -3,6 +3,7 @@ import { BrandService } from "./brand.service"
 import { Request, Response, Router } from "express"
 import middleware from "@/common/middleware"
 import { HttpStatusCode, SuccessfulResponse, asyncHandler } from "@/common/utils"
+import { Brand } from "@/models"
 
 export class BrandController implements IRoute {
   private readonly router: Router
@@ -54,8 +55,11 @@ export class BrandController implements IRoute {
   }
 
   async findAll(req: Request, res: Response): Promise<void> {
-    const data = await BrandController.brandService.findAll()
-    new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
+    const page = parseInt(req.query.page?.toString() || "1")
+    const limit = parseInt(req.query.limit?.toString() || "10")
+    const totalData = await Brand.countDocuments().exec()
+    const data = await BrandController.brandService.findAll(page, limit)
+    new SuccessfulResponse(data, HttpStatusCode.OK).withPagination(res, page, limit, totalData)
   }
 
   async findById(req: Request, res: Response): Promise<void> {
@@ -64,13 +68,17 @@ export class BrandController implements IRoute {
   }
 
   private async getBrandProducts(req: Request, res: Response): Promise<void> {
-    const data = await BrandController.brandService.getProducts(req.params.id)
-    new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
+    const page = parseInt(req.query.page?.toString() || "1")
+    const limit = parseInt(req.query.limit?.toString() || "10")
+    const data = await BrandController.brandService.getProducts(req.params.id, page, limit)
+    new SuccessfulResponse(data.data, HttpStatusCode.OK).withPagination(res, page, limit, data.total)
   }
 
   private async getBrandAndProducts(req: Request, res: Response): Promise<void> {
-    const data = await BrandController.brandService.getBrandAndProducts()
-    new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
+    const page = parseInt(req.query.page?.toString() || "1")
+    const limit = parseInt(req.query.limit?.toString() || "10")
+    const data = await BrandController.brandService.getBrandAndProducts(page, limit)
+    new SuccessfulResponse(data.data, HttpStatusCode.OK).withPagination(res, page, limit, data.total)
   }
 
   getPath(): string {

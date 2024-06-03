@@ -5,6 +5,7 @@ import { ErrorResponse, HttpStatusCode, SuccessfulResponse } from "@/common/util
 import middleware from "@/common/middleware"
 import { ERole } from "@/enum"
 import { asyncHandler } from "@/common/utils"
+import { Category } from "@/models"
 
 export class CategoryController implements IRoute {
   private readonly router: Router
@@ -73,8 +74,12 @@ export class CategoryController implements IRoute {
   }
 
   private async getAllCategories(req: Request, res: Response): Promise<void> {
-    const data = await CategoryController.categoryService.getAll()
-    new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
+    const page = parseInt(req.query.page?.toString() || "1")
+    const limit = parseInt(req.query.limit?.toString() || "10")
+    const totalData = await Category.countDocuments().exec()
+
+    const data = await CategoryController.categoryService.getAll(page, limit)
+    new SuccessfulResponse(data, HttpStatusCode.OK).withPagination(res, page, limit, totalData)
   }
 
   private async getCategoryBy(req: Request, res: Response): Promise<void> {
@@ -83,13 +88,17 @@ export class CategoryController implements IRoute {
   }
 
   private async getProductsByCategory(req: Request, res: Response): Promise<void> {
-    const data = await CategoryController.categoryService.getProducts(req.params.categoryId)
-    new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
+    const page = parseInt(req.query.page?.toString() || "1")
+    const limit = parseInt(req.query.limit?.toString() || "10")
+    const data = await CategoryController.categoryService.getProducts(req.params.categoryId, page, limit)
+    new SuccessfulResponse(data.data, HttpStatusCode.OK).withPagination(res, page, limit, data.total)
   }
 
   private async getCategoryAndProducts(req: Request, res: Response): Promise<void> {
-    const data = await CategoryController.categoryService.getCategoryAndProducts()
-    new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
+    const page = parseInt(req.query.page?.toString() || "1")
+    const limit = parseInt(req.query.limit?.toString() || "10")
+    const data = await CategoryController.categoryService.getCategoryAndProducts(page, limit)
+    new SuccessfulResponse(data.data, HttpStatusCode.OK).withPagination(res, page, limit, data.total)
   }
 
   getPath(): string {

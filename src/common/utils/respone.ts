@@ -2,6 +2,7 @@ import { IFinalResponse } from "@/interface"
 import { Response } from "express"
 import { Socket } from "socket.io"
 import { SOCKET_SERVER_MESSAGE } from "../constants/socket"
+import { paginate } from "./paginate"
 
 class SuccessfulResponse<T> implements IFinalResponse<T> {
   success: boolean
@@ -30,6 +31,17 @@ class SuccessfulResponse<T> implements IFinalResponse<T> {
       statusCode: this.statusCode,
       message: this.message,
       data: this.data
+    })
+  }
+
+  async withPagination(res: Response, page: number, limit: number, total: number): Promise<void> {
+    const paginationRes = await paginate(page, limit, total)
+    res.status(this.statusCode).json({
+      success: this.success,
+      statusCode: this.statusCode,
+      message: this.message,
+      data: this.data,
+      ...paginationRes
     })
   }
 }

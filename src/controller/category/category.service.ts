@@ -1,9 +1,9 @@
-import { ICategory, IProduct } from "@/interface"
+import { ICategory, IProduct, TotalAndData } from "@/interface"
 import { CategoryRepository } from "./category.repository"
 import { CreateCategoryRequest, CreateCategoryResponse } from "./dto"
-import { Category, SCHEMA_NAME } from "@/models"
+import { Category, Product, SCHEMA_NAME } from "@/models"
 import { ObjectModelNotFoundException, ObjectModelOperationException } from "@/common/exceptions"
-import { stringToObjectId } from "@/common/utils"
+import { paginate, stringToObjectId } from "@/common/utils"
 
 export class CategoryService implements CategoryRepository {
   async create(req: CreateCategoryRequest): Promise<CreateCategoryResponse> {
@@ -45,12 +45,8 @@ export class CategoryService implements CategoryRepository {
   async update(id: string, data: Partial<ICategory>): Promise<ICategory> {
     const { parent } = data
 
-    console.log(parent)
-
     const category = await Category.findById(id)
     if (!category) throw new ObjectModelNotFoundException("Category not found")
-
-    console.log(category.parent)
 
     if (parent && parent !== "") {
       const parentCategory = await Category.findById(parent)
@@ -110,9 +106,84 @@ export class CategoryService implements CategoryRepository {
 
     return category
   }
-  async getAll(): Promise<Array<ICategory>> {
-    return await Category.find().populate("children").populate("parent")
+  async getAll(page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit
+    const categoryWithProductCount = await Category.aggregate([
+      {
+        $lookup: {
+          from: SCHEMA_NAME.PRODUCTS,
+          localField: "_id",
+          foreignField: "category",
+          as: "products"
+        }
+      },
+      {
+        $lookup: {
+          from: SCHEMA_NAME.CATEGORIES,
+          localField: "children",
+          foreignField: "_id",
+          as: "children",
+          pipeline: [
+            {
+              $project: {
+                description: 0
+              }
+            },
+            {
+              $lookup: {
+                from: SCHEMA_NAME.PRODUCTS,
+                localField: "_id",
+                foreignField: "category",
+                as: "products"
+              }
+            },
+            {
+              $addFields: {
+                productCount: {
+                  $size: "$products"
+                }
+              }
+            },
+            {
+              $project: {
+                products: 0
+              }
+            }
+          ]
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          slug: 1,
+          image: 1,
+          parent: 1,
+          children: 1,
+          products: 1
+        }
+      },
+      {
+        $limit: limit + skip
+      },
+      {
+        $skip: skip
+      },
+      {
+        $addFields: {
+          productCount: {
+            $size: "$products"
+          }
+        }
+      },
+      {
+        $project: {
+          products: 0
+        }
+      }
+    ])
+    return categoryWithProductCount.sort((a, b) => b.productCount - a.productCount)
   }
+
   async getOne(type: keyof ICategory, id: string): Promise<ICategory> {
     const data = await Category.findOne({ [type]: id })
 
@@ -120,129 +191,132 @@ export class CategoryService implements CategoryRepository {
     return data
   }
 
-  async getProducts(id: string): Promise<
-    (ICategory & {
-      products: IProduct[]
-    })[]
-  > {
-    const data = await Category.aggregate([
-      {
-        $match: {
-          _id: stringToObjectId(id)
-        }
-      },
-      {
-        $lookup: {
-          from: SCHEMA_NAME.PRODUCTS,
-          localField: "_id",
-          foreignField: "category",
-          as: "products",
-          pipeline: [
+  async getProducts(slug: string, page: number, limit: number): Promise<TotalAndData<IProduct>> {
+    const category = await Category.findOne({ slug })
+    if (!category) throw new ObjectModelNotFoundException("Category not found")
+
+    const categoryQuery = () =>
+      Product.find(
+        { category: category._id },
+        { description: 0 },
+        {
+          populate: [
             {
-              $lookup: {
-                from: SCHEMA_NAME.BRAND,
-                localField: "brand",
-                foreignField: "_id",
-                as: "brand",
-                pipeline: [
-                  {
-                    $project: {
-                      products: 0
-                    }
-                  }
-                ]
-              }
-            },
-            { $unwind: "$brand" },
-            {
-              $project: {
-                description: 0
-              }
+              path: "category",
+              select: "name"
             },
             {
-              $lookup: {
-                from: SCHEMA_NAME.CATEGORIES,
-                localField: "category",
-                foreignField: "_id",
-                as: "category",
-                pipeline: [
-                  {
-                    $project: {
-                      description: 0
-                    }
-                  }
-                ]
-              }
+              path: "variants"
             },
-            { $unwind: "$category" }
+            {
+              path: "brand",
+              select: "name logo"
+            },
+            {
+              path: "tax",
+              select: "name rate"
+            },
+            {
+              path: "shippingFee"
+            }
           ]
         }
-      }
-    ])
-    return data.length > 0 ? data[0] : null
+      )
+
+    const total = await categoryQuery().countDocuments()
+    const data = await categoryQuery()
+      .limit(limit)
+      .skip((page - 1) * limit)
+    return {
+      total,
+      data
+    }
   }
 
-  async getCategoryAndProducts(): Promise<any[]> {
-    const productAndCategory = await Category.aggregate([
-      {
-        $lookup: {
-          from: SCHEMA_NAME.PRODUCTS,
-          localField: "_id",
-          foreignField: "category",
-          as: "products",
-          pipeline: [
-            {
-              $lookup: {
-                from: SCHEMA_NAME.BRAND,
-                localField: "brand",
-                foreignField: "_id",
-                as: "brand",
-                pipeline: [
-                  {
-                    $project: {
-                      products: 0
-                    }
-                  }
-                ]
-              }
-            },
-            { $unwind: "$brand" },
-            {
-              $project: {
-                description: 0
-              }
-            },
-            {
-              $lookup: {
-                from: SCHEMA_NAME.CATEGORIES,
-                localField: "category",
-                foreignField: "_id",
-                as: "category",
-                pipeline: [
-                  {
-                    $project: {
-                      description: 0
-                    }
-                  }
-                ]
-              }
-            },
-            { $unwind: "$category" }
-          ]
-        }
-      },
-      {
-        $project: {
-          name: 1,
-          products: 1
-        }
-      },
-      {
-        $sort: {
-          name: 1
-        }
+  async getCategoryAndProducts(
+    page: number,
+    limit: number
+  ): Promise<
+    TotalAndData<
+      ICategory & {
+        products: IProduct[]
       }
-    ])
-    return productAndCategory
+    >
+  > {
+    const productAndCategory = () =>
+      Category.aggregate([
+        {
+          $lookup: {
+            from: SCHEMA_NAME.PRODUCTS,
+            localField: "_id",
+            foreignField: "category",
+            as: "products",
+            pipeline: [
+              {
+                $limit: 10
+              },
+              {
+                $lookup: {
+                  from: SCHEMA_NAME.BRAND,
+                  localField: "brand",
+                  foreignField: "_id",
+                  as: "brand",
+                  pipeline: [
+                    {
+                      $project: {
+                        products: 0
+                      }
+                    }
+                  ]
+                }
+              },
+              { $unwind: "$brand" },
+              {
+                $project: {
+                  description: 0
+                }
+              },
+              {
+                $lookup: {
+                  from: SCHEMA_NAME.CATEGORIES,
+                  localField: "category",
+                  foreignField: "_id",
+                  as: "category",
+                  pipeline: [
+                    {
+                      $project: {
+                        description: 0
+                      }
+                    }
+                  ]
+                }
+              },
+              { $unwind: "$category" }
+            ]
+          }
+        },
+        {
+          $project: {
+            name: 1,
+            slug: 1,
+            products: 1
+          }
+        },
+        {
+          $sort: {
+            name: 1
+          }
+        }
+      ])
+
+    const total = await Category.countDocuments().exec()
+    const data = await productAndCategory()
+      .limit(limit + (page - 1) * limit)
+      .skip((page - 1) * limit)
+
+    return {
+      total,
+      data
+    }
   }
 }

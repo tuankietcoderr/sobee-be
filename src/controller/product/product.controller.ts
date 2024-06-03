@@ -4,6 +4,7 @@ import { ERole } from "@/enum"
 import { IProduct, IRoute } from "@/interface"
 import { Request, Response, Router } from "express"
 import { ProductService } from "./product.service"
+import { Product } from "@/models"
 
 export class ProductController implements IRoute {
   private readonly router: Router
@@ -72,7 +73,14 @@ export class ProductController implements IRoute {
       asyncHandler(this.toggleFavorite)
     )
 
-    this.router.get(this.PATHS.PUBLISHED, asyncHandler(this.getPublishedProducts))
+    this.router.get(this.PATHS.ROOT, asyncHandler(this.getAllProducts))
+
+    this.router.get(
+      this.PATHS.PUBLISHED,
+      middleware.verifyToken,
+      middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
+      asyncHandler(this.getPublishedProducts)
+    )
 
     this.router.get(
       this.PATHS.DRAFT,
@@ -116,8 +124,16 @@ export class ProductController implements IRoute {
   }
 
   private async getPublishedProducts(req: Request, res: Response) {
-    const response = await ProductController.productService.getPublishedProducts(req.query)
-    new SuccessfulResponse(response, HttpStatusCode.OK, "Get products successfully").from(res)
+    const page = parseInt(req.query.page?.toString() || "1")
+    const limit = parseInt(req.query.limit?.toString() || "10")
+    const totalData = await Product.countDocuments().exec()
+    const response = await ProductController.productService.getPublishedProducts(req.query, page, limit)
+    new SuccessfulResponse(response, HttpStatusCode.OK, "Get products successfully").withPagination(
+      res,
+      page,
+      limit,
+      totalData
+    )
   }
 
   private async getDraftProducts(req: Request, res: Response) {
@@ -171,6 +187,19 @@ export class ProductController implements IRoute {
     const { productId } = req.params
     const response = await ProductController.productService.toggleFavorite(productId, req.userId)
     new SuccessfulResponse(response, HttpStatusCode.OK, "Toggle favorite successfully").from(res)
+  }
+
+  private async getAllProducts(req: Request, res: Response) {
+    const page = parseInt(req.query.page?.toString() || "1")
+    const limit = parseInt(req.query.limit?.toString() || "10")
+    const response = await ProductController.productService.getAll(req.query, page, limit)
+
+    new SuccessfulResponse(response.data, HttpStatusCode.OK, "Get all products successfully").withPagination(
+      res,
+      page,
+      limit,
+      response.total
+    )
   }
 
   getPath(): string {
