@@ -1,4 +1,4 @@
-import { IFavorite, ITax } from "@/interface"
+import { ITax } from "@/interface"
 import { Schema, model } from "mongoose"
 import { SCHEMA_NAME } from "./schema-name"
 
