@@ -18,7 +18,18 @@ const CategorySchema = new Schema<ICategory>(
     slug: {
       type: String,
       unique: true
-    }
+    },
+    parent: {
+      type: Schema.Types.ObjectId,
+      ref: SCHEMA_NAME.CATEGORIES,
+      default: null
+    },
+    children: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: SCHEMA_NAME.CATEGORIES
+      }
+    ]
   },
   {
     versionKey: false
