@@ -20,6 +20,25 @@ export class OrderService implements OrderRepository {
       throw new ObjectModelNotFoundException("Product not found")
     }
 
+    if (product.isVariation) {
+      const existOrderItem = await OrderItem.findOne({
+        customer: data.customer,
+        product: data.product,
+        size: data.size,
+        color: data.color
+      })
+
+      if (existOrderItem) {
+        return await this.updateOrderItemQuantity(existOrderItem._id.toString(), existOrderItem.amount + data.amount)
+      }
+    } else {
+      const existOrderItem = await OrderItem.findOne({ customer: data.customer, product: data.product })
+
+      if (existOrderItem) {
+        return await this.updateOrderItemQuantity(existOrderItem._id.toString(), existOrderItem.amount + data.amount)
+      }
+    }
+
     let price = 0
     let subTotal = 0
 
@@ -65,7 +84,29 @@ export class OrderService implements OrderRepository {
     await orderItem.save()
     await product.save()
 
-    return orderItem
+    return await orderItem.populate({
+      path: "product",
+      populate: [
+        {
+          path: "category",
+          select: "name"
+        },
+        {
+          path: "variants"
+        },
+        {
+          path: "brand",
+          select: "name logo"
+        },
+        {
+          path: "tax",
+          select: "name rate"
+        },
+        {
+          path: "shippingFee"
+        }
+      ]
+    })
   }
 
   async removeOrderItem(id: string): Promise<DeleteResult> {
@@ -165,7 +206,29 @@ export class OrderService implements OrderRepository {
 
     await product.save()
 
-    return orderItem
+    return await orderItem.populate({
+      path: "product",
+      populate: [
+        {
+          path: "category",
+          select: "name"
+        },
+        {
+          path: "variants"
+        },
+        {
+          path: "brand",
+          select: "name logo"
+        },
+        {
+          path: "tax",
+          select: "name rate"
+        },
+        {
+          path: "shippingFee"
+        }
+      ]
+    })
   }
 
   async createOrder(data: IOrder): Promise<IOrder> {

@@ -1,4 +1,4 @@
-import { IFavorite } from "@/interface"
+import { IFavorite, IProduct } from "@/interface"
 import { FavoriteRepository } from "./favorite.repository"
 import { Favorite, Product } from "@/models"
 import { ObjectModelNotFoundException } from "@/common/exceptions"
@@ -11,11 +11,16 @@ export class FavoriteService implements FavoriteRepository {
   constructor() {
     this.productService = new ProductService()
   }
-  async toogleFavoriteProduct(customerId: string, productId: string): Promise<IFavorite> {
+
+  async create(customer: string) {
+    return await Favorite.create({ products: [], customer })
+  }
+
+  async toogleFavoriteProduct(customerId: string, productId: string): Promise<IProduct[]> {
     //check if favorite exists
     let favorite = await Favorite.findOne({ customer: customerId })
     if (!favorite) {
-      favorite = await Favorite.create({ customer: customerId, products: [] })
+      favorite = await this.create(customerId)
     }
 
     //check if product is already in the favorite list
@@ -33,28 +38,28 @@ export class FavoriteService implements FavoriteRepository {
       favorite.products.map(async (productId: any) => await this.productService.getOne("_id", productId))
     )
 
-    const newFavorite = await favorite.save()
+    await favorite.save()
 
-    return { ...newFavorite.toObject(), products: productDetails }
+    return productDetails
   }
-  async getFavorites(customerId: string): Promise<IFavorite> {
+  async getFavorites(customerId: string): Promise<IProduct[]> {
     const favorite = await Favorite.findOne({ customer: customerId }).lean()
     if (!favorite) {
-      return await Favorite.create({ customer: customerId, products: [] })
+      await this.create(customerId)
+      return []
     }
     //if favorite not found, create a new favorite with empty product list
     const productDetails = await Promise.all(
       favorite.products.map(async (productId: any) => await this.productService.getOne("_id", productId))
     )
-    const newFavorite = { ...favorite, products: productDetails }
-
-    return newFavorite
+    return productDetails
   }
-  async removeAllFavoriteProducts(customerId: string): Promise<IFavorite> {
+  async removeAllFavoriteProducts(customerId: string): Promise<IProduct[]> {
     //check if favorite exists
     const favorite = await Favorite.findOne({ customer: customerId })
     if (!favorite) {
-      return await Favorite.create({ customer: customerId, products: [] })
+      await this.create(customerId)
+      return []
     }
     Promise.all(
       favorite.products.map(async (productId: any) => await this.productService.toggleFavorite(productId, customerId))
@@ -64,6 +69,6 @@ export class FavoriteService implements FavoriteRepository {
     favorite.products = []
     await favorite.save()
 
-    return favorite
+    return []
   }
 }

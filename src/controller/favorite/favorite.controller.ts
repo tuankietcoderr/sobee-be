@@ -11,8 +11,8 @@ export class FavoriteController implements IRoute {
   private readonly PATHS = {
     ROOT: "/",
     FAVORITE: "/:favoriteId",
-    TOGGLE: "/toggle/:productId",
-    REMOVE_ALL: "/remove-all"
+    TOGGLE: "/:productId/toggle",
+    REMOVE_ALL: "/clear"
   }
 
   private static readonly favoriteService = new FavoriteService()
@@ -26,7 +26,7 @@ export class FavoriteController implements IRoute {
 
   private initializeRoutes(): void {
     this.router.get(this.PATHS.ROOT, asyncHandler(this.getFavorites))
-    this.router.post(this.PATHS.TOGGLE, asyncHandler(this.toggleFavorite))
+    this.router.put(this.PATHS.TOGGLE, asyncHandler(this.toggleFavorite))
     this.router.delete(this.PATHS.REMOVE_ALL, asyncHandler(this.removeAllFavoriteProducts))
   }
 
