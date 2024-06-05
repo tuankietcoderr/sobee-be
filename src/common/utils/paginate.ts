@@ -14,7 +14,7 @@ export const paginate = async (page: number, limit: number, total: number): Prom
       offset,
       limit,
       page,
-      total,
+      total: totalPages,
       nextPage,
       prevPage
     } as IPaginate)

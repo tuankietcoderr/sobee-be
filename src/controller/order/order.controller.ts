@@ -3,6 +3,7 @@ import { OrderService } from "./order.service"
 import { Request, Response, Router } from "express"
 import { HttpStatusCode, SuccessfulResponse, asyncHandler } from "@/common/utils"
 import middleware from "@/common/middleware"
+import { ERole } from "@/enum"
 
 export class OrderController implements IRoute {
   private readonly router: Router
@@ -12,7 +13,9 @@ export class OrderController implements IRoute {
     ORDER_ITEM: "/item",
     ORDER_ITEM_ID: "/item/:id",
     ORDER_ITEM_QUANTITY: "/item/:id/quantity",
-    ORDER: "/"
+    ORDER: "/",
+    ORDER_ID: "/:id",
+    CUSTOMER: "/customer"
   }
 
   private static readonly orderService = new OrderService()
@@ -34,7 +37,9 @@ export class OrderController implements IRoute {
     )
     this.router.post(this.PATHS.ORDER, middleware.mustHaveFields<IOrder>("orderItems"), asyncHandler(this.createOrder))
     this.router.get(this.PATHS.ORDER_ITEM, asyncHandler(this.getOrderItemsByCustomer))
-    this.router.get(this.PATHS.ORDER, asyncHandler(this.getOrdersByCustomer))
+    this.router.get(this.PATHS.CUSTOMER, asyncHandler(this.getOrdersByCustomer))
+    this.router.get("/", middleware.verifyRoles(ERole.ADMIN, ERole.STAFF), asyncHandler(this.getAllOrders))
+    this.router.get(this.PATHS.ORDER_ID, asyncHandler(this.getOrderById))
   }
 
   private async addOrderItem(req: Request, res: Response): Promise<void> {
@@ -71,6 +76,19 @@ export class OrderController implements IRoute {
   private async getOrdersByCustomer(req: Request, res: Response): Promise<void> {
     const orders = await OrderController.orderService.getOrdersByCustomer(req.userId)
     new SuccessfulResponse(orders, HttpStatusCode.OK).from(res)
+  }
+
+  private async getOrderById(req: Request, res: Response): Promise<void> {
+    const orderItems = await OrderController.orderService.getOrderById(req.params.id)
+    new SuccessfulResponse(orderItems, HttpStatusCode.OK).from(res)
+  }
+
+  private async getAllOrders(req: Request, res: Response): Promise<void> {
+    const page = parseInt(req.query.page?.toString() || "1")
+    const limit = parseInt(req.query.limit?.toString() || "12")
+    const keyword = req.query.keyword?.toString()
+    const data = await OrderController.orderService.getAllOrders(page, limit, keyword)
+    new SuccessfulResponse(data.data, HttpStatusCode.OK).withPagination(res, page, limit, data.total)
   }
 
   getPath(): string {

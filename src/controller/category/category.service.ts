@@ -106,9 +106,10 @@ export class CategoryService implements CategoryRepository {
 
     return category
   }
-  async getAll(page: number = 1, limit: number = 10) {
+  async getAll(page: number = 1, limit: number = 10, keyword: string = ""): Promise<TotalAndData<ICategory>> {
     const skip = (page - 1) * limit
-    const categoryWithProductCount = await Category.aggregate([
+    const categoryWithProductCountQuery = await Category.aggregate([
+      keyword ? { $match: { name: { $regex: keyword, $options: "i" } } } : { $match: {} },
       {
         $lookup: {
           from: SCHEMA_NAME.PRODUCTS,
@@ -163,12 +164,6 @@ export class CategoryService implements CategoryRepository {
         }
       },
       {
-        $limit: limit + skip
-      },
-      {
-        $skip: skip
-      },
-      {
         $addFields: {
           productCount: {
             $size: "$products"
@@ -181,7 +176,14 @@ export class CategoryService implements CategoryRepository {
         }
       }
     ])
-    return categoryWithProductCount.sort((a, b) => b.productCount - a.productCount)
+
+    const total = categoryWithProductCountQuery.length
+    const data = categoryWithProductCountQuery.slice(skip, skip + limit)
+
+    return {
+      data,
+      total
+    }
   }
 
   async getOne(type: keyof ICategory, id: string): Promise<ICategory> {

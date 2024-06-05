@@ -57,9 +57,9 @@ export class BrandController implements IRoute {
   async findAll(req: Request, res: Response): Promise<void> {
     const page = parseInt(req.query.page?.toString() || "1")
     const limit = parseInt(req.query.limit?.toString() || "12")
-    const totalData = await Brand.countDocuments().exec()
-    const data = await BrandController.brandService.findAll(page, limit)
-    new SuccessfulResponse(data, HttpStatusCode.OK).withPagination(res, page, limit, totalData)
+    const keyword = req.query.keyword?.toString()
+    const data = await BrandController.brandService.getAll(page, limit, keyword)
+    new SuccessfulResponse(data.data, HttpStatusCode.OK).withPagination(res, page, limit, data.total)
   }
 
   async findById(req: Request, res: Response): Promise<void> {

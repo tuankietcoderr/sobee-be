@@ -1,6 +1,6 @@
-import { Coupon, Order, OrderItem, Product } from "@/models"
+import { Cart, Coupon, Order, OrderItem, Product } from "@/models"
 import { OrderRepository } from "./order.repository"
-import { IOrder, IOrderItem } from "@/interface"
+import { IOrder, IOrderItem, TotalAndData } from "@/interface"
 import { ObjectModelNotFoundException, ObjectModelOperationException } from "@/common/exceptions"
 import { DeleteResult } from "mongodb"
 import { CouponService } from "../coupon"
@@ -232,6 +232,12 @@ export class OrderService implements OrderRepository {
   }
 
   async createOrder(data: IOrder): Promise<IOrder> {
+    const cart = await Cart.findOne({ customer: data.customer })
+
+    if (!cart) {
+      throw new ObjectModelNotFoundException("Cart not found")
+    }
+
     if (data.coupon) {
       const coupon = await this.couponService.use(data.coupon.toString(), data.customer.toString())
       data.coupon = coupon._id!
@@ -248,7 +254,10 @@ export class OrderService implements OrderRepository {
 
     order.status = EOrderStatus.PENDING
 
+    cart.cartItems = []
+
     await order.save()
+    await cart.save()
 
     return order
   }
@@ -287,5 +296,64 @@ export class OrderService implements OrderRepository {
       {}
     )
     return orders
+  }
+
+  async getOrderById(id: string): Promise<IOrder> {
+    const order = await Order.findById(id).populate({
+      path: "orderItems",
+      populate: [
+        {
+          path: "product",
+          select: "name thumbnail isVariation slug shippingFee tax isDiscount discount",
+          populate: [
+            {
+              path: "shippingFee"
+            },
+            {
+              path: "tax",
+              select: "name rate"
+            }
+          ]
+        }
+      ]
+    })
+
+    if (!order) {
+      throw new ObjectModelNotFoundException("Order not found")
+    }
+
+    return order
+  }
+
+  async getAllOrders(page: number, limit: number, keyword: string = ""): Promise<TotalAndData<IOrder>> {
+    const orders = () =>
+      Order.find({
+        $or: [
+          {
+            orderGeneratedId: { $regex: keyword, $options: "i" }
+          },
+          {
+            phoneNumber: { $regex: keyword, $options: "i" }
+          },
+          {
+            emailAdress: { $regex: keyword, $options: "i" }
+          }
+        ]
+      }).populate({
+        path: "customer",
+        select: "name avatar"
+      })
+
+    const total = await orders().countDocuments().exec()
+    const data = await orders()
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .sort({ createdAt: -1 })
+      .exec()
+
+    return {
+      total,
+      data
+    }
   }
 }

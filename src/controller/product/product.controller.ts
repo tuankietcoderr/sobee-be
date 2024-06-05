@@ -1,6 +1,6 @@
 import middleware from "@/common/middleware"
 import { HttpStatusCode, SuccessfulResponse, asyncHandler } from "@/common/utils"
-import { ERole } from "@/enum"
+import { EProductStatus, ERole } from "@/enum"
 import { IProduct, IRoute } from "@/interface"
 import { Request, Response, Router } from "express"
 import { ProductService } from "./product.service"
@@ -126,19 +126,25 @@ export class ProductController implements IRoute {
   private async getPublishedProducts(req: Request, res: Response) {
     const page = parseInt(req.query.page?.toString() || "1")
     const limit = parseInt(req.query.limit?.toString() || "12")
-    const totalData = await Product.countDocuments().exec()
     const response = await ProductController.productService.getPublishedProducts(req.query, page, limit)
-    new SuccessfulResponse(response, HttpStatusCode.OK, "Get products successfully").withPagination(
+    new SuccessfulResponse(response.data, HttpStatusCode.OK, "Get products successfully").withPagination(
       res,
       page,
       limit,
-      totalData
+      response.total
     )
   }
 
   private async getDraftProducts(req: Request, res: Response) {
-    const response = await ProductController.productService.getDraftProducts()
-    new SuccessfulResponse(response, HttpStatusCode.OK, "Get draft products successfully").from(res)
+    const page = parseInt(req.query.page?.toString() || "1")
+    const limit = parseInt(req.query.limit?.toString() || "12")
+    const response = await ProductController.productService.getDraftProducts(req.query, page, limit)
+    new SuccessfulResponse(response.data, HttpStatusCode.OK, "Get draft products successfully").withPagination(
+      res,
+      page,
+      limit,
+      response.total
+    )
   }
 
   private async getPopularProducts(req: Request, res: Response) {
@@ -192,7 +198,9 @@ export class ProductController implements IRoute {
   private async getAllProducts(req: Request, res: Response) {
     const page = parseInt(req.query.page?.toString() || "1")
     const limit = parseInt(req.query.limit?.toString() || "12")
-    const response = await ProductController.productService.getAll(req.query, page, limit)
+    const response = await ProductController.productService.getAll(req.query, page, limit, {
+      isDraft: false
+    })
 
     new SuccessfulResponse(response.data, HttpStatusCode.OK, "Get all products successfully").withPagination(
       res,

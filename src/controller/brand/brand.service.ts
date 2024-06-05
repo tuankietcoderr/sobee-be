@@ -21,9 +21,10 @@ export class BrandService implements BrandRepository {
     return brand
   }
 
-  async findAll(page: number, limit: number): Promise<IBrand[]> {
+  async getAll(page: number = 1, limit: number = 10, keyword: string = ""): Promise<TotalAndData<IBrand>> {
     const skip = (page - 1) * limit
-    const brandWithProductCount = await Brand.aggregate([
+    const categoryWithProductCountQuery = await Brand.aggregate([
+      keyword ? { $match: { name: { $regex: keyword, $options: "i" } } } : { $match: {} },
       {
         $lookup: {
           from: SCHEMA_NAME.PRODUCTS,
@@ -33,29 +34,26 @@ export class BrandService implements BrandRepository {
         }
       },
       {
-        $project: {
-          name: 1,
-          slug: 1,
-          logo: 1,
-          products: 1
-        }
-      },
-      {
         $addFields: {
           productCount: {
             $size: "$products"
           }
         }
       },
-      { $limit: limit + skip },
-      { $skip: skip },
       {
         $project: {
           products: 0
         }
       }
     ])
-    return brandWithProductCount.sort((a, b) => b.productCount - a.productCount)
+
+    const total = categoryWithProductCountQuery.length
+    const data = categoryWithProductCountQuery.slice(skip, skip + limit)
+
+    return {
+      data,
+      total
+    }
   }
 
   async findById(id: string): Promise<IBrand> {

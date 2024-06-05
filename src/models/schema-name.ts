@@ -30,5 +30,6 @@ export const SCHEMA_NAME = {
   PAYMENT_ACCOUNTS: "paymentAccounts",
   PAYMENT_CARDS: "paymentCards",
   QUESTIONS: "questions",
-  REPLIES: "replies"
+  REPLIES: "replies",
+  REFUND_POLICIES: "refundPolicies"
 }

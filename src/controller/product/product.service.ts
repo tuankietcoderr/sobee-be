@@ -110,9 +110,16 @@ export class ProductService implements ProductRepository {
     return await product.deleteOne()
   }
 
-  async getAll(query: any, page: number, limit: number): Promise<TotalAndData<IProduct>> {
+  async getAll(
+    query: any,
+    page: number,
+    limit: number,
+    otherQuery?: Partial<Record<keyof IProduct, any>>,
+    canSort: boolean = true
+  ): Promise<TotalAndData<IProduct>> {
     const priceRange = query.priceRange || null
     const keyword = query.keyword || null
+    console.log(query, otherQuery)
     const categories = query.categories && query.categories !== "All" ? [query.categories].flat() : null
     const colors = query.colors && query.colors !== "All" ? [query.colors].flat().map((v) => `#${v}`) : null
     const sizes = query.sizes && query.sizes !== "All" ? query.sizes : null
@@ -123,6 +130,9 @@ export class ProductService implements ProductRepository {
     const searchQueries = ["priceRange", "keyword", "categories", "colors", "sizes", "ratings", "sortBy", "isOnSale"]
 
     const hasSearchQuery = searchQueries.some((q) => query[q])
+    const hasKeywordOnly = searchQueries.filter((q) => q !== "keyword").every((q) => !query[q])
+
+    console.log({ hasKeywordOnly })
 
     const sorts = [
       {
@@ -167,35 +177,46 @@ export class ProductService implements ProductRepository {
         {
           $and: [
             {
-              isDraft: false,
-              status: EProductStatus.ACTIVE
+              ...otherQuery
             },
-            hasSearchQuery
-              ? {
-                  $and: [
-                    priceRange
-                      ? {
-                          $or: [
-                            { displayPrice: { $gte: priceRange[0], $lte: priceRange[1] } },
-                            {
-                              maxPrice: { $gte: priceRange[0], $lte: priceRange[1] }
-                            }
-                          ]
-                        }
-                      : {},
-                    keyword ? { name: { $regex: keyword, $options: "i" } } : {},
-                    categories ? { category: { $in: categories } } : {},
-                    colors
-                      ? {
-                          "variants.color": { $in: colors }
-                        }
-                      : {},
-                    sizes ? { "variants.size": { $in: sizes } } : {},
-                    ratings ? { ratingValue: { $in: ratings } } : {},
-                    isOnSale !== "false" ? { isDiscount: true } : {}
+            ...(hasKeywordOnly
+              ? [
+                  {
+                    $or: [{ name: { $regex: keyword || "", $options: "i" } }]
+                  }
+                ]
+              : hasSearchQuery
+                ? [
+                    {
+                      $and: [
+                        ...(priceRange
+                          ? [
+                              {
+                                $or: [
+                                  { displayPrice: { $gte: priceRange[0], $lte: priceRange[1] } },
+                                  {
+                                    maxPrice: { $gte: priceRange[0], $lte: priceRange[1] }
+                                  }
+                                ]
+                              }
+                            ]
+                          : []),
+                        ...(keyword ? [{ name: { $regex: keyword, $options: "i" } }] : []),
+                        ...(categories ? [{ category: { $in: categories } }] : []),
+                        ...(colors
+                          ? [
+                              {
+                                "variants.color": { $in: colors }
+                              }
+                            ]
+                          : []),
+                        ...(sizes ? [{ "variants.size": { $in: sizes } }] : []),
+                        ...(ratings ? [{ ratingValue: { $in: ratings } }] : []),
+                        ...(isOnSale !== "false" ? [{ isDiscount: true }] : [])
+                      ]
+                    }
                   ]
-                }
-              : {}
+                : [])
           ]
         },
         {
@@ -203,20 +224,22 @@ export class ProductService implements ProductRepository {
         },
         {
           ...this.generalPopulate,
-          sort: sortKey
-            ? {
-                [sortKey]: dir === "asc" ? 1 : -1
-              }
-            : {
-                isFeatured: -1,
-                discount: -1,
-                ratingValue: -1,
-                ratingCount: -1,
-                sold: -1,
-                displayPrice: 1,
-                favoritesBy: -1,
-                maxPrice: 1
-              }
+          sort: canSort
+            ? sortKey
+              ? {
+                  [sortKey]: dir === "asc" ? 1 : -1
+                }
+              : {
+                  isFeatured: -1,
+                  discount: -1,
+                  ratingValue: -1,
+                  ratingCount: -1,
+                  sold: -1,
+                  displayPrice: 1,
+                  favoritesBy: -1,
+                  maxPrice: 1
+                }
+            : {}
         }
       )
 
@@ -231,123 +254,29 @@ export class ProductService implements ProductRepository {
     }
   }
 
-  async getPublishedProducts(query: any, page: number, limit: number): Promise<IProduct[]> {
-    const priceRange = query.priceRange || null
-    const keyword = query.keyword || null
-    const categories = query.categories && query.categories !== "All" ? [query.categories].flat() : null
-    const colors = query.colors && query.colors !== "All" ? [query.colors].flat().map((v) => `#${v}`) : null
-    const sizes = query.sizes && query.sizes !== "All" ? query.sizes : null
-    const ratings = query.ratings && query.ratings !== "All" ? query.ratings : null
-    const sortBy = (query.sortBy && query.sortBy) || "Newest"
-    const isOnSale = query.isOnSale
-
-    const searchQueries = ["priceRange", "keyword", "categories", "colors", "sizes", "ratings", "sortBy", "isOnSale"]
-
-    const hasSearchQuery = searchQueries.some((q) => query[q])
-
-    const sorts = [
+  async getPublishedProducts(query: any, page: number, limit: number) {
+    console.log(query)
+    return await this.getAll(
+      query,
+      page,
+      limit,
       {
-        label: "Price: Low to High",
-        key: "displayPrice-asc"
+        isDraft: false
       },
-      {
-        label: "Price: High to Low",
-        key: "displayPrice-desc"
-      },
-      {
-        label: "Rating: Low to High",
-        key: "ratingValue-asc"
-      },
-      {
-        label: "Rating: High to Low",
-        key: "ratingValue-desc"
-      },
-      {
-        label: "Newest",
-        key: "createdAt-desc"
-      },
-      {
-        label: "Oldest",
-        key: "createdAt-asc"
-      },
-      {
-        label: "Best Selling",
-        key: "sold-desc"
-      },
-      {
-        label: "Most Popular",
-        key: "ratingCount-desc"
-      }
-    ]
-
-    const sort = sorts.find((s) => s.key === sortBy)
-    const [sortKey, dir] = sort?.key.split("-") ?? ["createdAt", "desc"]
-
-    return await Product.find(
-      {
-        $and: [
-          { isDraft: false },
-          hasSearchQuery
-            ? {
-                $and: [
-                  priceRange
-                    ? {
-                        $or: [
-                          { displayPrice: { $gte: priceRange[0], $lte: priceRange[1] } },
-                          {
-                            maxPrice: { $gte: priceRange[0], $lte: priceRange[1] }
-                          }
-                        ]
-                      }
-                    : {},
-                  keyword ? { name: { $regex: keyword, $options: "i" } } : {},
-                  categories ? { category: { $in: categories } } : {},
-                  colors
-                    ? {
-                        "variants.color": { $in: colors }
-                      }
-                    : {},
-                  sizes ? { "variants.size": { $in: sizes } } : {},
-                  ratings ? { ratingValue: { $in: ratings } } : {},
-                  isOnSale !== "false" ? { isDiscount: true } : {}
-                ]
-              }
-            : {}
-        ]
-      },
-      {
-        description: 0
-      },
-      {
-        ...this.generalPopulate,
-        sort: {
-          [sortKey]: dir === "asc" ? 1 : -1
-        }
-      }
+      false
     )
-      .limit(limit)
-      .skip((page - 1) * limit)
   }
 
-  async getDraftProducts(): Promise<IProduct[]> {
-    return await Product.find(
-      { isDraft: true },
+  async getDraftProducts(query: any, page: number, limit: number) {
+    return await this.getAll(
+      query,
+      page,
+      limit,
       {
-        category: 1,
-        name: 1,
-        displayPrice: 1,
-        type: 1,
-        quantity: 1,
-        status: 1,
-        updatedAt: 1
+        isDraft: true
       },
-      {
-        populate: {
-          path: "category",
-          select: "name"
-        }
-      }
-    ).sort({ createdAt: -1 })
+      false
+    )
   }
 
   async getOne(type: keyof IProduct, id: string): Promise<IProduct> {
@@ -390,7 +319,7 @@ export class ProductService implements ProductRepository {
     const product = await Product.findById(processedSlug)
     if (!product) throw new ObjectModelNotFoundException("Product not found")
 
-    return await Product.find({ category: product.category }, {}, this.generalPopulate)
+    return await Product.find({ category: product.category, isDraft: false }, {}, this.generalPopulate)
       .sort({ createdAt: -1 })
       .limit(10)
   }
@@ -400,7 +329,8 @@ export class ProductService implements ProductRepository {
       {
         ratingCount: { $gt: 3 },
         ratingValue: { $gt: 3 },
-        sold: { $gt: 0 }
+        sold: { $gt: 0 },
+        isDraft: false
       },
       {},
       this.generalPopulate
@@ -412,7 +342,8 @@ export class ProductService implements ProductRepository {
   async getBestSeller(): Promise<IProduct[]> {
     return await Product.find(
       {
-        sold: { $gt: 0 }
+        sold: { $gt: 0 },
+        isDraft: false
       },
       {},
       this.generalPopulate
@@ -422,13 +353,17 @@ export class ProductService implements ProductRepository {
   }
 
   async getPopular(): Promise<IProduct[]> {
-    return await Product.find({ ratingCount: { $gt: 3 }, ratingValue: { $gt: 3 } }, {}, this.generalPopulate)
+    return await Product.find(
+      { ratingCount: { $gt: 3 }, ratingValue: { $gt: 3 }, isDraft: false },
+      {},
+      this.generalPopulate
+    )
       .sort({ ratingValue: -1, ratingCount: -1 })
       .limit(10)
   }
 
   async getDiscounted(): Promise<IProduct[]> {
-    return await Product.find({ isDiscount: true }, {}, this.generalPopulate)
+    return await Product.find({ isDiscount: true, isDraft: false }, {}, this.generalPopulate)
   }
 
   async getColors(): Promise<string[]> {
@@ -456,7 +391,8 @@ export class ProductService implements ProductRepository {
           $elemMatch: {
             $eq: userId
           }
-        }
+        },
+        isDraft: false
       },
       {},
       this.generalPopulate

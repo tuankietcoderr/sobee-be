@@ -76,10 +76,10 @@ export class CategoryController implements IRoute {
   private async getAllCategories(req: Request, res: Response): Promise<void> {
     const page = parseInt(req.query.page?.toString() || "1")
     const limit = parseInt(req.query.limit?.toString() || "12")
-    const totalData = await Category.countDocuments().exec()
+    const keyword = req.query.keyword?.toString()
 
-    const data = await CategoryController.categoryService.getAll(page, limit)
-    new SuccessfulResponse(data, HttpStatusCode.OK).withPagination(res, page, limit, totalData)
+    const data = await CategoryController.categoryService.getAll(page, limit, keyword)
+    new SuccessfulResponse(data.data, HttpStatusCode.OK).withPagination(res, page, limit, data.total)
   }
 
   private async getCategoryBy(req: Request, res: Response): Promise<void> {
