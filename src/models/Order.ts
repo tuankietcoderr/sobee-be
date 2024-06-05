@@ -55,7 +55,7 @@ const OrderSchema = new Schema<IOrder>(
       type: Number,
       required: true
     },
-    emailAdress: String,
+    emailAddress: String,
     phoneNumber: String,
     taxFee: Number
   },

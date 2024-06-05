@@ -1,11 +1,11 @@
-import { Cart, Coupon, Order, OrderItem, Product } from "@/models"
-import { OrderRepository } from "./order.repository"
-import { IOrder, IOrderItem, TotalAndData } from "@/interface"
 import { ObjectModelNotFoundException, ObjectModelOperationException } from "@/common/exceptions"
+import { generateOrderId } from "@/common/utils"
+import { EOrderStatus } from "@/enum"
+import { IOrder, IOrderItem, TotalAndData } from "@/interface"
+import { Order, OrderItem, Product } from "@/models"
 import { DeleteResult } from "mongodb"
 import { CouponService } from "../coupon"
-import { ECouponType, EOrderStatus } from "@/enum"
-import { generateOrderId } from "@/common/utils"
+import { OrderRepository } from "./order.repository"
 
 export class OrderService implements OrderRepository {
   private readonly couponService: CouponService
@@ -72,7 +72,7 @@ export class OrderService implements OrderRepository {
     product.quantity -= data.amount
 
     if (product.isDiscount) {
-      subTotal -= subTotal * product.discount
+      subTotal -= subTotal * (product.discount / 100)
     }
 
     const orderItem = new OrderItem({
@@ -232,18 +232,12 @@ export class OrderService implements OrderRepository {
   }
 
   async createOrder(data: IOrder): Promise<IOrder> {
-    const cart = await Cart.findOne({ customer: data.customer })
-
-    if (!cart) {
-      throw new ObjectModelNotFoundException("Cart not found")
-    }
-
     if (data.coupon) {
       const coupon = await this.couponService.use(data.coupon.toString(), data.customer.toString())
       data.coupon = coupon._id!
     }
 
-    const orderItems = await OrderItem.find({ customer: data.customer, _id: { $in: data.orderItems } }).lean()
+    const orderItems = await OrderItem.find({ customer: data.customer, _id: { $in: data.orderItems } })
 
     const order = new Order({
       ...data,
@@ -254,10 +248,8 @@ export class OrderService implements OrderRepository {
 
     order.status = EOrderStatus.PENDING
 
-    cart.cartItems = []
-
+    await OrderItem.deleteMany({ _id: { $in: data.orderItems } })
     await order.save()
-    await cart.save()
 
     return order
   }
@@ -299,24 +291,33 @@ export class OrderService implements OrderRepository {
   }
 
   async getOrderById(id: string): Promise<IOrder> {
-    const order = await Order.findById(id).populate({
-      path: "orderItems",
-      populate: [
-        {
-          path: "product",
-          select: "name thumbnail isVariation slug shippingFee tax isDiscount discount",
-          populate: [
-            {
-              path: "shippingFee"
-            },
-            {
-              path: "tax",
-              select: "name rate"
-            }
-          ]
-        }
-      ]
-    })
+    const order = await Order.findById(id).populate([
+      {
+        path: "orderItems",
+        populate: [
+          {
+            path: "product",
+            select: "name thumbnail isVariation slug shippingFee tax isDiscount discount",
+            populate: [
+              {
+                path: "shippingFee"
+              },
+              {
+                path: "tax",
+                select: "name rate"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        path: "shippingAddress"
+      },
+      {
+        path: "customer",
+        select: "name avatar"
+      }
+    ])
 
     if (!order) {
       throw new ObjectModelNotFoundException("Order not found")
@@ -355,5 +356,43 @@ export class OrderService implements OrderRepository {
       total,
       data
     }
+  }
+
+  async updateOrderStatus(id: string, status: EOrderStatus): Promise<IOrder> {
+    const order = await Order.findById(id)
+    if (!order) {
+      throw new ObjectModelNotFoundException("Order not found")
+    }
+
+    if (order.status === EOrderStatus.COMPLETED) {
+      throw new ObjectModelOperationException("Order already completed")
+    }
+
+    if (status === EOrderStatus.CANCELED) {
+      if (order.status !== EOrderStatus.PENDING) {
+        throw new ObjectModelOperationException("Order cannot be canceled")
+      }
+      order.canceledAt = new Date()
+    }
+
+    if (status === EOrderStatus.DELIVERED) {
+      if (order.status !== EOrderStatus.DELIVERING) {
+        throw new ObjectModelOperationException("Order cannot be delivered")
+      }
+      order.deliveredAt = new Date()
+    }
+
+    if (status === EOrderStatus.COMPLETED) {
+      if (order.status !== EOrderStatus.DELIVERED) {
+        throw new ObjectModelOperationException("Order cannot be completed")
+      }
+      order.completedAt = new Date()
+    }
+    order.status = status
+    order.canceledAt = null
+
+    await order.save()
+
+    return order
   }
 }

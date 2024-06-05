@@ -15,7 +15,8 @@ export class OrderController implements IRoute {
     ORDER_ITEM_QUANTITY: "/item/:id/quantity",
     ORDER: "/",
     ORDER_ID: "/:id",
-    CUSTOMER: "/customer"
+    CUSTOMER: "/customer",
+    STATUS: "/:id/status"
   }
 
   private static readonly orderService = new OrderService()
@@ -40,6 +41,12 @@ export class OrderController implements IRoute {
     this.router.get(this.PATHS.CUSTOMER, asyncHandler(this.getOrdersByCustomer))
     this.router.get("/", middleware.verifyRoles(ERole.ADMIN, ERole.STAFF), asyncHandler(this.getAllOrders))
     this.router.get(this.PATHS.ORDER_ID, asyncHandler(this.getOrderById))
+    this.router.put(
+      this.PATHS.STATUS,
+      middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
+      middleware.mustHaveFields("status"),
+      asyncHandler(this.updateOrderStatus)
+    )
   }
 
   private async addOrderItem(req: Request, res: Response): Promise<void> {
@@ -89,6 +96,11 @@ export class OrderController implements IRoute {
     const keyword = req.query.keyword?.toString()
     const data = await OrderController.orderService.getAllOrders(page, limit, keyword)
     new SuccessfulResponse(data.data, HttpStatusCode.OK).withPagination(res, page, limit, data.total)
+  }
+
+  private async updateOrderStatus(req: Request, res: Response): Promise<void> {
+    const order = await OrderController.orderService.updateOrderStatus(req.params.id, req.body.status)
+    new SuccessfulResponse(order, HttpStatusCode.OK, "Order status updated successfully").from(res)
   }
 
   getPath(): string {

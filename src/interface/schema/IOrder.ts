@@ -16,10 +16,10 @@ export interface IOrder {
   paymentMethod: EPaymentMethod
   shippingAddress: Types.ObjectId | IAddress | string
   phoneNumber: string
-  emailAdress: string
+  emailAddress: string
   note: string
   coupon: Types.ObjectId | string | ICoupon
-  canceledAt: Date
-  deliveredAt: Date
-  completedAt: Date
+  canceledAt: Date | null
+  deliveredAt: Date | null
+  completedAt: Date | null
 }
