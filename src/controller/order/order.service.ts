@@ -405,6 +405,12 @@ export class OrderService implements OrderRepository {
         throw new ObjectModelOperationException("Order cannot be completed")
       }
       order.completedAt = new Date()
+      await Product.updateMany(
+        { _id: { $in: (order.orderItems as IOrderItem[]).map((oi) => oi.product) } },
+        {
+          $inc: { sold: 1 }
+        }
+      )
     }
     order.status = status
     order.canceledAt = null

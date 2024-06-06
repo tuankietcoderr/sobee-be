@@ -7,6 +7,7 @@ export interface IPaginate {
   prevPage: number | null
   total: number
   offset: number
+  totalElements: number
 }
 
 export interface TotalAndData<T> {

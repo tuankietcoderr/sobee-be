@@ -14,11 +14,13 @@ const ReviewSchema = new Schema<IReview>(
     },
     customer: {
       ref: SCHEMA_NAME.USERS,
-      type: Schema.Types.ObjectId
+      type: Schema.Types.ObjectId,
+      required: true
     },
     product: {
       ref: SCHEMA_NAME.PRODUCTS,
-      type: Schema.Types.ObjectId
+      type: Schema.Types.ObjectId,
+      required: true
     },
     rating: {
       max: 5,

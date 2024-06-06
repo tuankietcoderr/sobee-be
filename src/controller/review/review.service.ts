@@ -1,6 +1,6 @@
-import { IReply, IReview } from "@/interface"
+import { IReply, IReview, TotalAndData } from "@/interface"
 import { ReviewRepository } from "./review.repository"
-import { Reply, Review } from "@/models"
+import { Product, Reply, Review } from "@/models"
 import { ObjectModelNotFoundException, UnauthorizedException } from "@/common/exceptions"
 import { ERole } from "@/enum"
 import { DeleteResult } from "mongodb"
@@ -8,18 +8,34 @@ import { getIdFromNameId } from "@/common/utils"
 
 export class ReviewService implements ReviewRepository {
   async createReview(data: IReview): Promise<IReview> {
+    const product = await Product.findById(data.product)
+    if (!product) throw new ObjectModelNotFoundException("Product not found")
+
+    product.ratingCount += 1
+    product.ratingValue = (product.ratingValue + data.rating) / product.ratingCount
+    await product.save()
+
     return await Review.create(data)
   }
 
   async updateReview(reviewId: string, data: Partial<IReview>, requestId: string, role: string): Promise<IReview> {
-    const foundReview = await Review.findByIdAndUpdate(reviewId, { $set: data }, { new: true }).lean()
+    const foundReview = await Review.findById(reviewId)
 
     if (!foundReview) throw new ObjectModelNotFoundException("Review not found")
+    // if (foundReview.customer.toString() !== requestId || role !== ERole.ADMIN)
+    //   throw new UnauthorizedException("You are not authorized to update this review")
 
-    if (foundReview.customer.toString() !== requestId || role !== ERole.ADMIN)
-      throw new UnauthorizedException("You are not authorized to update this review")
+    if (data.rating) {
+      const product = await Product.findById(foundReview.product)
+      if (!product) throw new ObjectModelNotFoundException("Product not found")
+      product.ratingValue =
+        (product.ratingValue * product.ratingCount - foundReview.rating + data.rating) / product.ratingCount
+      await product.save()
+    }
 
-    return foundReview
+    const updated = await foundReview.updateOne({ $set: data }, { new: true })
+
+    return updated
   }
 
   async getReviewsById(reviewId: string): Promise<IReview> {
@@ -33,16 +49,69 @@ export class ReviewService implements ReviewRepository {
     return foundReview
   }
 
-  //get all review and paginate
-  async getReviews(): Promise<IReview[]> {
-    return await Review.find().populate({ path: "customer" }).populate({ path: "product" }).lean()
+  async getReviewByProductIdAndCustomerId(productId: string, customerId: string): Promise<IReview> {
+    const foundReview = await Review.findOne({ product: productId, customer: customerId })
+    if (!foundReview) throw new ObjectModelNotFoundException("Review not found")
+    return foundReview
   }
 
-  async getReviewsByProductId(productId: string): Promise<IReview[]> {
+  //get all review and paginate
+  async getReviews(page: number, limit: number, keyword?: string): Promise<TotalAndData<IReview>> {
+    const reviewQuery = () =>
+      Review.find(
+        {
+          ...(keyword && {
+            $or: [{ content: { $regex: keyword, $options: "i" } }]
+          })
+        },
+        {},
+        {
+          populate: [
+            {
+              path: "customer",
+              select: "name email"
+            },
+            {
+              path: "product",
+              select: "name thumbnail"
+            }
+          ]
+        }
+      )
+
+    const total = await reviewQuery().countDocuments()
+    const reviews = await reviewQuery()
+      .skip((page - 1) * limit)
+      .limit(limit)
+
+    return {
+      total,
+      data: reviews
+    }
+  }
+
+  async getReviewsByProductId(
+    productId: string,
+    page: number,
+    limit: number,
+    filterRating?: number
+  ): Promise<TotalAndData<IReview>> {
     const processedSlug = getIdFromNameId(productId)
-    return await Review.find({ product: processedSlug })
-      .populate({ path: "customer", select: ["name", "email"] })
-      .lean()
+    const reviewQuery = () =>
+      Review.find({ product: processedSlug, ...(filterRating && { rating: filterRating }) }).populate({
+        path: "customer",
+        select: "name email avatar"
+      })
+
+    const total = await reviewQuery().countDocuments()
+    const reviews = await reviewQuery()
+      .skip((page - 1) * limit)
+      .limit(limit)
+
+    return {
+      total,
+      data: reviews
+    }
   }
   async getReviewsByCustomerId(customerId: string): Promise<IReview[]> {
     const foundReviews = await Review.find({ customer: customerId })
@@ -109,4 +178,68 @@ export class ReviewService implements ReviewRepository {
 
     return foundReview
   }
+
+  async getReviewAnalytics(): Promise<ReviewAnalytics> {
+    const totalRating = await Review.countDocuments()
+    const averageRating = await Review.aggregate([
+      {
+        $group: {
+          _id: null,
+          averageRating: { $avg: "$rating" }
+        }
+      }
+    ])
+
+    const byRating = await Review.aggregate([
+      {
+        $group: {
+          _id: "$rating",
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: {
+          _id: 1
+        }
+      },
+      {
+        $project: {
+          rating: "$_id",
+          count: 1,
+          _id: 0
+        }
+      }
+    ])
+
+    const lastWeekReview = await Review.aggregate([
+      {
+        $match: {
+          createdAt: {
+            $gte: new Date(new Date().getTime() - 7 * 24 * 60 * 60 * 1000)
+          }
+        }
+      },
+      {
+        $group: {
+          _id: null,
+          averageRating: { $avg: "$rating" },
+          totalRating: { $sum: 1 }
+        }
+      }
+    ])
+
+    return {
+      averageRating: averageRating[0].averageRating,
+      totalRating,
+      byRating,
+      lastWeekReview: lastWeekReview[0]
+    }
+  }
+}
+
+type ReviewAnalytics = {
+  averageRating: number
+  totalRating: number
+  byRating: { rating: number; count: number }[]
+  lastWeekReview: Omit<ReviewAnalytics, "lastWeekReview">
 }

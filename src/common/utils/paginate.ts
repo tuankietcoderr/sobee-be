@@ -16,7 +16,8 @@ export const paginate = async (page: number, limit: number, total: number): Prom
       page,
       total: totalPages,
       nextPage,
-      prevPage
+      prevPage,
+      totalElements: total
     } as IPaginate)
   } catch (error) {
     return Promise.reject(error)

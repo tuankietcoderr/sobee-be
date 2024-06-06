@@ -19,7 +19,9 @@ export class ReviewController implements IRoute {
     CUSTOMER: "/customer/:customerId",
     LIKE: "/like/:reviewId",
     REPLY: "/reply/:reviewId",
-    LIKE_REPLY: "/reply/like/:reviewId"
+    LIKE_REPLY: "/reply/like/:reviewId",
+    PRODUCT_AND_CUSTOMER: "/customer/product/:productId",
+    ANALYTICS: "/analytics"
   }
 
   private static readonly reviewService = new ReviewService()
@@ -39,6 +41,7 @@ export class ReviewController implements IRoute {
     )
     this.router.post(
       this.PATHS.ROOT,
+      middleware.verifyToken,
       middleware.mustHaveFields<IReview>("content", "rating", "product"),
       middleware.doNotAllowFields<IReview>("customer"),
       asyncHandler(this.createReview)
@@ -54,9 +57,20 @@ export class ReviewController implements IRoute {
     this.router.put(this.PATHS.REPLY, asyncHandler(this.replyReview))
     this.router.put(this.PATHS.LIKE_REPLY, middleware.verifyToken, asyncHandler(this.likeReply))
 
+    this.router.get(
+      this.PATHS.ANALYTICS,
+      middleware.verifyToken,
+      middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
+      asyncHandler(this.getAnalytics)
+    )
     this.router.get(this.PATHS.REVIEW, asyncHandler(this.getReviewsById))
     this.router.get(this.PATHS.PRODUCT, asyncHandler(this.getReviewsByProductId))
     this.router.get(this.PATHS.CUSTOMER, middleware.verifyToken, asyncHandler(this.getReviewsByCustomerId))
+    this.router.get(
+      this.PATHS.PRODUCT_AND_CUSTOMER,
+      middleware.verifyToken,
+      asyncHandler(this.getReviewsByProductAndCustomer)
+    )
     this.router.delete(
       this.PATHS.REVIEW,
       middleware.verifyToken,
@@ -77,8 +91,16 @@ export class ReviewController implements IRoute {
   }
 
   private async getReviews(req: Request, res: Response): Promise<void> {
-    const data = await ReviewController.reviewService.getReviews()
-    new SuccessfulResponse(data, HttpStatusCode.OK, "Get all reviews successfully").from(res)
+    const page = parseInt(req.query.page?.toString() || "1")
+    const limit = parseInt(req.query.limit?.toString() || "10")
+    const keyword = req.query.keyword?.toString()
+    const data = await ReviewController.reviewService.getReviews(page, limit, keyword)
+    new SuccessfulResponse(data.data, HttpStatusCode.OK, "Get all reviews successfully").withPagination(
+      res,
+      page,
+      limit,
+      data.total
+    )
   }
 
   private async getReviewsById(req: Request, res: Response): Promise<void> {
@@ -87,8 +109,16 @@ export class ReviewController implements IRoute {
   }
 
   private async getReviewsByProductId(req: Request, res: Response): Promise<void> {
-    const data = await ReviewController.reviewService.getReviewsByProductId(req.params.productId)
-    new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
+    const filterRating = req.query.rating ? Number(req.query.rating) : undefined
+    const page = parseInt(req.query.page?.toString() || "1")
+    const limit = parseInt(req.query.limit?.toString() || "10")
+    const data = await ReviewController.reviewService.getReviewsByProductId(
+      req.params.productId,
+      page,
+      limit,
+      filterRating
+    )
+    new SuccessfulResponse(data.data, HttpStatusCode.OK).withPagination(res, page, limit, data.total)
   }
 
   private async getReviewsByCustomerId(req: Request, res: Response): Promise<void> {
@@ -114,6 +144,19 @@ export class ReviewController implements IRoute {
   private async likeReply(req: Request, res: Response): Promise<void> {
     const data = await ReviewController.reviewService.likeReply(req.params.reviewId, req.userId)
     new SuccessfulResponse(data, HttpStatusCode.OK, "Like reply successfully").from(res)
+  }
+
+  private async getReviewsByProductAndCustomer(req: Request, res: Response): Promise<void> {
+    const data = await ReviewController.reviewService.getReviewByProductIdAndCustomerId(
+      req.params.productId,
+      req.userId
+    )
+    new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
+  }
+
+  private async getAnalytics(req: Request, res: Response): Promise<void> {
+    const data = await ReviewController.reviewService.getReviewAnalytics()
+    new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
   }
 
   getPath(): string {
