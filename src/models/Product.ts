@@ -114,9 +114,6 @@ ProductSchema.pre("save", function (next) {
     this.isVariation = true
   }
 
-  if (this.discount > 1) {
-    this.discount /= 100
-  }
   next()
 })
 
@@ -133,9 +130,6 @@ ProductSchema.pre("updateOne", function (next) {
     this.set("isVariation", false)
   }
 
-  if (this.get("discount") > 1) {
-    this.set("discount", this.get("discount") / 100)
-  }
   next()
 })
 
