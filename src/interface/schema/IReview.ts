@@ -11,6 +11,6 @@ export interface IReview {
   rating: number
   content: string
   reply: IReply
-  assets: string[] | Types.ObjectId[] | IAsset[]
+  assets: string[]
   likes: string[]
 }

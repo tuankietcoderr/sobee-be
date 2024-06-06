@@ -3,7 +3,7 @@ import { OrderService } from "./order.service"
 import { Request, Response, Router } from "express"
 import { HttpStatusCode, SuccessfulResponse, asyncHandler } from "@/common/utils"
 import middleware from "@/common/middleware"
-import { ERole } from "@/enum"
+import { EOrderStatus, ERole } from "@/enum"
 
 export class OrderController implements IRoute {
   private readonly router: Router
@@ -16,7 +16,8 @@ export class OrderController implements IRoute {
     ORDER: "/",
     ORDER_ID: "/:id",
     CUSTOMER: "/customer",
-    STATUS: "/:id/status"
+    STATUS: "/:id/status",
+    CANCEL: "/:id/status/cancel"
   }
 
   private static readonly orderService = new OrderService()
@@ -47,6 +48,7 @@ export class OrderController implements IRoute {
       middleware.mustHaveFields("status"),
       asyncHandler(this.updateOrderStatus)
     )
+    this.router.delete(this.PATHS.CANCEL, middleware.verifyToken, asyncHandler(this.cancelOrder))
   }
 
   private async addOrderItem(req: Request, res: Response): Promise<void> {
@@ -81,8 +83,11 @@ export class OrderController implements IRoute {
   }
 
   private async getOrdersByCustomer(req: Request, res: Response): Promise<void> {
-    const orders = await OrderController.orderService.getOrdersByCustomer(req.userId)
-    new SuccessfulResponse(orders, HttpStatusCode.OK).from(res)
+    const page = parseInt(req.query.page?.toString() || "1")
+    const limit = parseInt(req.query.limit?.toString() || "10")
+    const status = req.query.status?.toString()
+    const orders = await OrderController.orderService.getOrdersByCustomer(req.userId, page, limit, status)
+    new SuccessfulResponse(orders.data, HttpStatusCode.OK).withPagination(res, page, limit, orders.total)
   }
 
   private async getOrderById(req: Request, res: Response): Promise<void> {
@@ -101,6 +106,11 @@ export class OrderController implements IRoute {
   private async updateOrderStatus(req: Request, res: Response): Promise<void> {
     const order = await OrderController.orderService.updateOrderStatus(req.params.id, req.body.status)
     new SuccessfulResponse(order, HttpStatusCode.OK, "Order status updated successfully").from(res)
+  }
+
+  private async cancelOrder(req: Request, res: Response): Promise<void> {
+    const order = await OrderController.orderService.updateOrderStatus(req.params.id, EOrderStatus.CANCELED)
+    new SuccessfulResponse(order, HttpStatusCode.OK, "Order canceled successfully").from(res)
   }
 
   getPath(): string {

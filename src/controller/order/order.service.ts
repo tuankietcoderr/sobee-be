@@ -1,7 +1,7 @@
 import { ObjectModelNotFoundException, ObjectModelOperationException } from "@/common/exceptions"
 import { generateOrderId } from "@/common/utils"
 import { EOrderStatus } from "@/enum"
-import { IOrder, IOrderItem, TotalAndData } from "@/interface"
+import { IOrder, IOrderItem, IProduct, TotalAndData } from "@/interface"
 import { Order, OrderItem, Product } from "@/models"
 import { DeleteResult } from "mongodb"
 import { CouponService } from "../coupon"
@@ -279,15 +279,33 @@ export class OrderService implements OrderRepository {
     return orderItems
   }
 
-  async getOrdersByCustomer(customerId: string): Promise<IOrder[]> {
-    const orders = await Order.find(
-      {
-        customer: customerId
-      },
-      {},
-      {}
-    )
-    return orders
+  async getOrdersByCustomer(
+    customerId: string,
+    page: number,
+    limit: number,
+    status?: string
+  ): Promise<TotalAndData<IOrder>> {
+    console.log({ page, limit })
+    const orders = () =>
+      Order.find(
+        {
+          customer: customerId,
+          ...(status ? { status } : {})
+        },
+        {},
+        {}
+      )
+
+    const total = await orders().countDocuments()
+    const data = await orders()
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .sort({ createdAt: -1 })
+
+    return {
+      total,
+      data
+    }
   }
 
   async getOrderById(id: string): Promise<IOrder> {
