@@ -1,4 +1,5 @@
 export { default as Address } from "./Address"
+export { AddressSchema } from "./Address"
 export { default as Admin } from "./Admin"
 export { default as Asset } from "./Asset"
 export { default as Brand } from "./Brand"

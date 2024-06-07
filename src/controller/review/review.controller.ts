@@ -21,7 +21,8 @@ export class ReviewController implements IRoute {
     REPLY: "/reply/:reviewId",
     LIKE_REPLY: "/reply/like/:reviewId",
     PRODUCT_AND_CUSTOMER: "/customer/product/:productId",
-    ANALYTICS: "/analytics"
+    ANALYTICS: "/analytics",
+    MOCK: "/mock"
   }
 
   private static readonly reviewService = new ReviewService()
@@ -46,6 +47,7 @@ export class ReviewController implements IRoute {
       middleware.doNotAllowFields<IReview>("customer"),
       asyncHandler(this.createReview)
     )
+    this.router.post(this.PATHS.MOCK, asyncHandler(this.createReviewMock))
     this.router.put(
       this.PATHS.REVIEW,
       middleware.verifyToken,
@@ -72,9 +74,15 @@ export class ReviewController implements IRoute {
       asyncHandler(this.getReviewsByProductAndCustomer)
     )
     this.router.delete(
+      this.PATHS.ROOT,
+      middleware.verifyToken,
+      middleware.verifyRoles(ERole.ADMIN),
+      asyncHandler(this.deleteAllReviews)
+    )
+    this.router.delete(
       this.PATHS.REVIEW,
       middleware.verifyToken,
-      middleware.grandAccess(EActionPermissions.DELETEOWN, EResourcePermissions.REVIEW),
+      // middleware.grandAccess(EActionPermissions.DELETEOWN, EResourcePermissions.REVIEW),
       middleware.veryfyOwner<IReview>("customer", Review, "reviewId"),
       asyncHandler(this.deleteReviewById)
     )
@@ -82,6 +90,10 @@ export class ReviewController implements IRoute {
 
   private async createReview(req: Request, res: Response): Promise<void> {
     const data = await ReviewController.reviewService.createReview({ ...req.body, customer: req.userId })
+    new SuccessfulResponse(data, HttpStatusCode.CREATED, "Create review successfully").from(res)
+  }
+  private async createReviewMock(req: Request, res: Response): Promise<void> {
+    const data = await ReviewController.reviewService.createReview({ ...req.body })
     new SuccessfulResponse(data, HttpStatusCode.CREATED, "Create review successfully").from(res)
   }
 
@@ -129,6 +141,11 @@ export class ReviewController implements IRoute {
   private async deleteReviewById(req: Request, res: Response): Promise<void> {
     const data = await ReviewController.reviewService.deleteReviewById(req.params.reviewId)
     new SuccessfulResponse(data, HttpStatusCode.OK, "Review deleted successfully").from(res)
+  }
+
+  private async deleteAllReviews(req: Request, res: Response): Promise<void> {
+    const data = await ReviewController.reviewService.deleteAllReview()
+    new SuccessfulResponse(data, HttpStatusCode.OK, "All reviews deleted successfully").from(res)
   }
 
   private async likeReview(req: Request, res: Response): Promise<void> {

@@ -22,7 +22,8 @@ export class ProductController implements IRoute {
     RELATED: "/:productId/related",
     COLOR: "/color",
     CUSTOMER_FAVORITE: "/customer/favorite",
-    TOGGLE_FAVORITE: "/:productId/favorite"
+    TOGGLE_FAVORITE: "/:productId/favorite",
+    BY_ORDER: "/by-order"
   }
 
   private static readonly productService = new ProductService()
@@ -66,6 +67,8 @@ export class ProductController implements IRoute {
       asyncHandler(this.deleteProduct)
     )
 
+    this.router.get(this.PATHS.BY_ORDER, asyncHandler(this.getByOrder))
+
     this.router.put(
       this.PATHS.TOGGLE_FAVORITE,
       middleware.verifyParams("productId"),
@@ -105,7 +108,10 @@ export class ProductController implements IRoute {
 
     this.router.get(this.PATHS.PRODUCT, asyncHandler(this.getProductById))
   }
-
+  private async getByOrder(req: Request, res: Response) {
+    const response = await ProductController.productService.getProductsAndCustomerInOrder()
+    new SuccessfulResponse(response, HttpStatusCode.OK, "Get product successfully").from(res)
+  }
   private async createProduct(req: Request, res: Response) {
     const response = await ProductController.productService.create(req.body)
     new SuccessfulResponse(response, HttpStatusCode.CREATED, "Create product successfully").from(res)

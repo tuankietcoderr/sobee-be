@@ -2,7 +2,7 @@ import { ObjectModelNotFoundException, ObjectModelOperationException } from "@/c
 import { generateOrderId } from "@/common/utils"
 import { EOrderStatus } from "@/enum"
 import { IOrder, IOrderItem, IProduct, TotalAndData } from "@/interface"
-import { Order, OrderItem, Product } from "@/models"
+import { Address, Order, OrderItem, Product } from "@/models"
 import { DeleteResult } from "mongodb"
 import { CouponService } from "../coupon"
 import { OrderRepository } from "./order.repository"
@@ -237,11 +237,14 @@ export class OrderService implements OrderRepository {
       data.coupon = coupon._id!
     }
 
+    const address = await Address.findById(data.shippingAddress)
+
     const orderItems = await OrderItem.find({ customer: data.customer, _id: { $in: data.orderItems } })
 
     const order = new Order({
       ...data,
-      orderItems
+      orderItems,
+      shippingAddress: address
     })
 
     order.orderGeneratedId = generateOrderId()
@@ -249,6 +252,30 @@ export class OrderService implements OrderRepository {
     order.status = EOrderStatus.PENDING
 
     await OrderItem.deleteMany({ _id: { $in: data.orderItems } })
+    await order.save()
+
+    return order
+  }
+
+  async createOrderMockData(data: IOrder): Promise<IOrder> {
+    if (data.coupon) {
+      const coupon = await this.couponService.use(data.coupon.toString(), data.customer.toString())
+      data.coupon = coupon._id!
+    }
+
+    const order = new Order({
+      ...data
+    })
+
+    order.orderGeneratedId = data.orderGeneratedId || generateOrderId()
+
+    order.status = data.status || EOrderStatus.PENDING
+
+    if (order.status === EOrderStatus.DELIVERED || order.status === EOrderStatus.COMPLETED) {
+      ;(data.orderItems as IOrderItem[]).forEach(async (oi: IOrderItem) => {
+        await Product.findByIdAndUpdate(oi.product, { $inc: { sold: oi.amount } })
+      })
+    }
     await order.save()
 
     return order
@@ -329,9 +356,6 @@ export class OrderService implements OrderRepository {
         ]
       },
       {
-        path: "shippingAddress"
-      },
-      {
         path: "customer",
         select: "name avatar"
       }
@@ -391,6 +415,8 @@ export class OrderService implements OrderRepository {
         throw new ObjectModelOperationException("Order cannot be canceled")
       }
       order.canceledAt = new Date()
+    } else {
+      order.canceledAt = null
     }
 
     if (status === EOrderStatus.DELIVERED) {
@@ -405,15 +431,11 @@ export class OrderService implements OrderRepository {
         throw new ObjectModelOperationException("Order cannot be completed")
       }
       order.completedAt = new Date()
-      await Product.updateMany(
-        { _id: { $in: (order.orderItems as IOrderItem[]).map((oi) => oi.product) } },
-        {
-          $inc: { sold: 1 }
-        }
-      )
+      ;(order.orderItems as IOrderItem[]).forEach(async (oi: IOrderItem) => {
+        await Product.findByIdAndUpdate(oi.product, { $inc: { sold: oi.amount } })
+      })
     }
     order.status = status
-    order.canceledAt = null
 
     await order.save()
 

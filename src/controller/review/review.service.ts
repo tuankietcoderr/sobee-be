@@ -1,8 +1,7 @@
 import { IReply, IReview, TotalAndData } from "@/interface"
 import { ReviewRepository } from "./review.repository"
 import { Product, Reply, Review } from "@/models"
-import { ObjectModelNotFoundException, UnauthorizedException } from "@/common/exceptions"
-import { ERole } from "@/enum"
+import { ObjectModelNotFoundException } from "@/common/exceptions"
 import { DeleteResult } from "mongodb"
 import { getIdFromNameId } from "@/common/utils"
 
@@ -11,11 +10,24 @@ export class ReviewService implements ReviewRepository {
     const product = await Product.findById(data.product)
     if (!product) throw new ObjectModelNotFoundException("Product not found")
 
-    product.ratingCount += 1
-    product.ratingValue = (product.ratingValue + data.rating) / product.ratingCount
-    await product.save()
+    const review = await Review.create(data)
 
-    return await Review.create(data)
+    const newRatingCount = product.ratingCount + 1
+    const newRatingValue = (product.ratingValue * product.ratingCount + data.rating) / newRatingCount
+
+    // Update the product with the new rating values
+    await Product.findByIdAndUpdate(
+      data.product,
+      {
+        $set: {
+          ratingValue: Math.round(newRatingValue * 10) / 10,
+          ratingCount: newRatingCount
+        }
+      },
+      { new: true } // Return the updated product document
+    )
+
+    return review
   }
 
   async updateReview(reviewId: string, data: Partial<IReview>, requestId: string, role: string): Promise<IReview> {
@@ -125,8 +137,40 @@ export class ReviewService implements ReviewRepository {
 
     if (!foundReview) throw new ObjectModelNotFoundException("Review not found")
 
+    const product = await Product.findById(foundReview.product)
+    if (!product) {
+      foundReview.deleteOne()
+      throw new ObjectModelNotFoundException("Product in review not found. Review deleted successfully")
+    }
+
+    const newRatingCount = product.ratingCount - 1
+    const newRatingValue = (product.ratingValue * product.ratingCount - foundReview.rating) / newRatingCount
+
+    // Update the product with the new rating values
+    await Product.findByIdAndUpdate(
+      foundReview.product,
+      {
+        $set: {
+          ratingValue: Math.round(newRatingValue * 10) / 10,
+          ratingCount: newRatingCount
+        }
+      },
+      { new: true } // Return the updated product document
+    )
+
     const deleted = await foundReview.deleteOne()
     return deleted
+  }
+
+  async deleteAllReview(): Promise<void> {
+    const reviews = await Review.find()
+    //set ratingCount and ratingValue to 0
+    reviews.forEach(async (review) => {
+      await Product.findByIdAndUpdate(review.product, {
+        $set: { ratingCount: 0, ratingValue: 0 }
+      })
+      await review.deleteOne()
+    })
   }
 
   async replyReview(reviewId: string, content: string): Promise<IReview> {

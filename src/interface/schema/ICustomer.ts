@@ -9,5 +9,4 @@ export interface ICustomer {
   emailVerifiedAt?: Date
   gender?: string
   isActive?: boolean
-  addresses: string[] | Types.ObjectId[] | IAddress[]
 }

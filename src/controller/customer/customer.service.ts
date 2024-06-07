@@ -1,9 +1,10 @@
 import { ICustomer, IUser } from "@/interface"
 import { CustomerRepository } from "./customer.repository"
-import { Credential, Customer, User } from "@/models"
+import { Address, Credential, Customer, User } from "@/models"
 import { ObjectModelNotFoundException, UserAlreadyExistsException } from "@/common/exceptions"
 import { hashPassword } from "@/common/utils"
 import { ERole } from "@/enum"
+import KeyToken from "@/models/KeyToken"
 
 export class CustomerService implements CustomerRepository {
   async create(req: IUser): Promise<IUser> {
@@ -126,7 +127,41 @@ export class CustomerService implements CustomerRepository {
     }
 
     await Customer.findByIdAndDelete(user._user)
+    await Credential.findOneAndDelete({ userId: id })
+    await KeyToken.deleteMany({ userId: id })
 
     return user.deleteOne()
+  }
+
+  async deleteAll(): Promise<any> {
+    const listCustomer = await User.find({ role: ERole.CUSTOMER })
+    Promise.all(
+      listCustomer.map(async (customer) => {
+        await Customer.findByIdAndDelete(customer._user)
+        await Credential.findOneAndDelete({ userId: customer._id })
+        await KeyToken.deleteMany({ userId: customer._id })
+        await customer.deleteOne()
+      })
+    )
+  }
+
+  async getCustomersAndAdresses(): Promise<any> {
+    const customers = await User.find({ role: ERole.CUSTOMER }).lean()
+    const result: any[] = []
+
+    await Promise.all(
+      customers.map(async (customer) => {
+        const defaultAddress = await Address.findOne({ customer: customer._id, isDefault: true }).lean()
+        result.push({
+          _id: customer._id,
+          name: customer.name,
+          email: customer.email,
+          phoneNumber: customer.phoneNumber,
+          address: defaultAddress
+        })
+      })
+    )
+
+    return result
   }
 }

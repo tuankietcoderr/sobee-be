@@ -5,12 +5,6 @@ import { EGender } from "@/enum"
 
 const CustomerSchema = new Schema<ICustomer>(
   {
-    addresses: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: SCHEMA_NAME.ADDRESSES
-      }
-    ],
     emailVerifiedAt: {
       type: Date,
       default: null

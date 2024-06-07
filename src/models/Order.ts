@@ -3,6 +3,7 @@ import { IOrder } from "@/interface"
 import { Schema, model } from "mongoose"
 import { SCHEMA_NAME } from "./schema-name"
 import { OrderItemSchema } from "./OrderItem"
+import { AddressSchema } from "./Address"
 
 const OrderSchema = new Schema<IOrder>(
   {
@@ -39,8 +40,8 @@ const OrderSchema = new Schema<IOrder>(
       default: EPaymentMethod.COD
     },
     shippingAddress: {
-      type: Schema.Types.ObjectId,
-      ref: SCHEMA_NAME.ADDRESSES
+      type: AddressSchema,
+      required: true
     },
     shippingFee: {
       type: Number,

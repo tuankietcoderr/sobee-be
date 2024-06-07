@@ -14,7 +14,7 @@ export interface IOrder {
   taxFee: number
   total: number
   paymentMethod: EPaymentMethod
-  shippingAddress: Types.ObjectId | IAddress | string
+  shippingAddress: IAddress
   phoneNumber: string
   emailAddress: string
   note: string
@@ -22,4 +22,6 @@ export interface IOrder {
   canceledAt: Date | null
   deliveredAt: Date | null
   completedAt: Date | null
+  createdAt?: Date
+  updatedAt?: Date
 }

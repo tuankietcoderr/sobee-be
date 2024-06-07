@@ -17,7 +17,8 @@ export class OrderController implements IRoute {
     ORDER_ID: "/:id",
     CUSTOMER: "/customer",
     STATUS: "/:id/status",
-    CANCEL: "/:id/status/cancel"
+    CANCEL: "/:id/status/cancel",
+    MOCK: "/mock"
   }
 
   private static readonly orderService = new OrderService()
@@ -37,6 +38,7 @@ export class OrderController implements IRoute {
       middleware.mustHaveFields("quantity"),
       asyncHandler(this.updateOrderItemQuantity)
     )
+    this.router.post(this.PATHS.MOCK, middleware.verifyRoles(ERole.ADMIN), asyncHandler(this.createOrderMockData))
     this.router.post(this.PATHS.ORDER, middleware.mustHaveFields<IOrder>("orderItems"), asyncHandler(this.createOrder))
     this.router.get(this.PATHS.ORDER_ITEM, asyncHandler(this.getOrderItemsByCustomer))
     this.router.get(this.PATHS.CUSTOMER, asyncHandler(this.getOrdersByCustomer))
@@ -73,6 +75,13 @@ export class OrderController implements IRoute {
     const order = await OrderController.orderService.createOrder({
       ...req.body,
       customer: req.userId
+    })
+    new SuccessfulResponse(order, HttpStatusCode.CREATED, "Order created successfully").from(res)
+  }
+  private async createOrderMockData(req: Request, res: Response): Promise<void> {
+    const order = await OrderController.orderService.createOrderMockData({
+      ...req.body,
+      customer: req.body.customer || req.userId
     })
     new SuccessfulResponse(order, HttpStatusCode.CREATED, "Order created successfully").from(res)
   }

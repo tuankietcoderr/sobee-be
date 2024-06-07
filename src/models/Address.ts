@@ -2,7 +2,7 @@ import { IAddress } from "@/interface"
 import { Schema, model } from "mongoose"
 import { SCHEMA_NAME } from "./schema-name"
 
-const AddressSchema = new Schema<IAddress>(
+export const AddressSchema = new Schema<IAddress>(
   {
     city: String,
     country: String,

@@ -13,7 +13,8 @@ export class CustomerController implements IRoute {
     ROOT: "/",
     ID: "/:id",
     BAN: "/ban/:id",
-    UNBAN: "/unban/:id"
+    UNBAN: "/unban/:id",
+    CUSTOMER_ADDRESS: "/customer-address"
   }
 
   private static readonly customerService = new CustomerService()
@@ -29,6 +30,8 @@ export class CustomerController implements IRoute {
   private initializeRoutes(): void {
     this.router.post(this.PATHS.ROOT, asyncHandler(this.create))
     this.router.get(this.PATHS.ROOT, asyncHandler(this.getAll))
+    this.router.delete(this.PATHS.ROOT, asyncHandler(this.deleteAll))
+    this.router.get(this.PATHS.CUSTOMER_ADDRESS, asyncHandler(this.getCustomerAndAddress))
     this.router.get(this.PATHS.ID, asyncHandler(this.getById))
     this.router.put(this.PATHS.BAN, asyncHandler(this.banCustomer))
     this.router.put(this.PATHS.UNBAN, asyncHandler(this.unbanCustomer))
@@ -69,6 +72,16 @@ export class CustomerController implements IRoute {
   async delete(req: Request, res: Response): Promise<void> {
     const data = await CustomerController.customerService.delete(req.params.id)
     return new SuccessfulResponse(data, HttpStatusCode.OK, "Delete customer successfully").from(res)
+  }
+
+  async deleteAll(req: Request, res: Response): Promise<void> {
+    const data = await CustomerController.customerService.deleteAll()
+    return new SuccessfulResponse(data, HttpStatusCode.OK, "Delete all customers successfully").from(res)
+  }
+
+  async getCustomerAndAddress(req: Request, res: Response): Promise<void> {
+    const data = await CustomerController.customerService.getCustomersAndAdresses()
+    return new SuccessfulResponse(data, HttpStatusCode.OK, "Get customer and address successfully").from(res)
   }
 
   getPath(): string {

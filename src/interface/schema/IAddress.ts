@@ -2,6 +2,7 @@ import { Types } from "mongoose"
 import { ICustomer } from "./ICustomer"
 
 export interface IAddress {
+  _id?: string
   name: string
   phoneNumber: string
   country: string

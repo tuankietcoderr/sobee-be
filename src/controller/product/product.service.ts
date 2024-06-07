@@ -1,8 +1,8 @@
 import { ObjectModelNotFoundException, ObjectModelOperationException } from "@/common/exceptions"
 import { generateNameId, getIdFromNameId } from "@/common/utils"
-import { EProductStatus, EProductType } from "@/enum"
+import { EOrderStatus, EProductType } from "@/enum"
 import { IProduct, IVariant, TotalAndData } from "@/interface"
-import { Product } from "@/models"
+import { Order, Product } from "@/models"
 import { DeleteResult } from "mongodb"
 import { BrandService } from "../brand"
 import { CategoryService } from "../category"
@@ -39,6 +39,67 @@ export class ProductService implements ProductRepository {
   constructor() {
     this.categoryService = new CategoryService()
     this.brandService = new BrandService()
+  }
+  async getProductsAndCustomerInOrder(): Promise<any> {
+    return await Order.aggregate([
+      {
+        $match: {
+          status: { $in: [EOrderStatus.COMPLETED, EOrderStatus.DELIVERED] }
+        }
+      },
+      {
+        $unwind: "$orderItems"
+      },
+      {
+        $group: {
+          _id: "$orderItems.product",
+          customers: {
+            $addToSet: "$orderItems.customer"
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: "products",
+          localField: "_id",
+          foreignField: "_id",
+          as: "product"
+        }
+      },
+      {
+        $unwind: "$product"
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "product.category",
+          foreignField: "_id",
+          as: "category"
+        }
+      },
+      {
+        $unwind: "$category"
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category.parent",
+          foreignField: "_id",
+          as: "parentCategory"
+        }
+      },
+      {
+        $unwind: "$parentCategory"
+      },
+      {
+        $project: {
+          productId: "$_id",
+          customers: 1,
+          category: "$parentCategory.name",
+          _id: 0
+        }
+      }
+    ])
   }
 
   async create(req: CreateProductRequest): Promise<IProduct> {

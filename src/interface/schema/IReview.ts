@@ -13,4 +13,6 @@ export interface IReview {
   reply: IReply
   assets: string[]
   likes: string[]
+  createdAt?: Date
+  updatedAt?: Date
 }
