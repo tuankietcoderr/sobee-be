@@ -29,6 +29,7 @@ import {
   QuestionController,
   FavoriteController
 } from "@/controller"
+import { AnalyticsController } from "@/controller/analytics"
 import { Express } from "express"
 
 function getRoutes(app: Express) {
@@ -60,7 +61,8 @@ function getRoutes(app: Express) {
     new PaymentAccountController(),
     new AssetController(),
     new QuestionController(),
-    new FavoriteController()
+    new FavoriteController(),
+    new AnalyticsController()
   ]
 
   controllers.forEach((controller) => {

@@ -415,7 +415,7 @@ export class ProductService implements ProductRepository {
 
   async getPopular(): Promise<IProduct[]> {
     return await Product.find(
-      { ratingCount: { $gt: 3 }, ratingValue: { $gt: 3 }, isDraft: false },
+      { ratingCount: { $gt: 4 }, ratingValue: { $gt: 4 }, isDraft: false },
       {},
       this.generalPopulate
     )
