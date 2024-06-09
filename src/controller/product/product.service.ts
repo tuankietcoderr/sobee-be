@@ -17,7 +17,7 @@ export class ProductService implements ProductRepository {
     populate: [
       {
         path: "category",
-        select: "name"
+        select: "name slug"
       },
       {
         path: "variants"

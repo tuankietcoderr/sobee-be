@@ -84,7 +84,9 @@ app.use(
       "x-client-id",
       "x-refresh-token",
       "Access-Control-Allow-Origin",
-      "Access-Control-Allow-Credentials"
+      "Access-Control-Allow-Credentials",
+      "client",
+      "token"
     ],
     maxAge: 86400,
     preflightContinue: false,

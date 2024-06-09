@@ -10,7 +10,8 @@ export class ChatRoomController implements IRoute {
 
   private readonly PATHS = {
     ROOT: "/",
-    USER: "/user"
+    USER: "/user",
+    ROOM: "/:roomId"
   }
 
   private static readonly chatRoomService = new ChatRoomService()
@@ -24,6 +25,17 @@ export class ChatRoomController implements IRoute {
 
   private initializeRoutes(): void {
     this.router.get(this.PATHS.USER, asyncHandler(this.getRoomsByUser))
+    this.router.get(this.PATHS.ROOM, asyncHandler(this.getRoomById))
+  }
+
+  async getRoomsByUser(req: Request, res: Response) {
+    const data = await ChatRoomController.chatRoomService.getRoomsByUser(req.userId)
+    new SuccessfulResponse(data, HttpStatusCode.OK, "Get list room chat successfully").from(res)
+  }
+
+  private async getRoomById(req: Request, res: Response) {
+    const data = await ChatRoomController.chatRoomService.getRoomById(req.params.roomId)
+    new SuccessfulResponse(data, HttpStatusCode.OK, "Get room chat successfully").from(res)
   }
 
   getPath(): string {
@@ -32,10 +44,5 @@ export class ChatRoomController implements IRoute {
 
   getRouter(): Router {
     return this.router
-  }
-
-  async getRoomsByUser(req: Request, res: Response) {
-    const data = await ChatRoomController.chatRoomService.getRoomsByUser(req.userId)
-    new SuccessfulResponse(data, HttpStatusCode.OK, "Get list room chat successfully").from(res)
   }
 }

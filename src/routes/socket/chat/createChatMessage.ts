@@ -10,24 +10,28 @@ export default function createChatMessage(socket: Socket) {
     socket,
     clientEventName: SOCKET_CLIENT_MESSAGE.CREATE_CHAT_MESSAGE,
     middlewares: [],
-    handler: async ({ chatRoomId, message }: { chatRoomId: string; message: IChatMessage }) => {
+    handler: async ({ chatRoomId, message }: { chatRoomId: string; message: string }) => {
+      console.log("message", message, chatRoomId)
       if (!chatRoomId || !message) throw new BadRequestResponse("Chat room and message are required")
-
       const chatRoom = await ChatRoom.findById(chatRoomId)
       if (!chatRoom) throw new BadRequestResponse("Chat room not found")
 
       const customer = chatRoom.customer.user.toString()
       const staff = chatRoom.staff.user.toString()
 
-      message.sender = socket.data.userId === customer ? customer : staff
-      message.receiver = socket.data.userId === customer ? staff : customer
+      const newMessage = {
+        content: message
+      } as IChatMessage
 
-      message.createdAt = new Date()
-      message.updatedAt = new Date()
+      newMessage.sender = socket.data.userId === customer ? customer : staff
+      newMessage.receiver = socket.data.userId === customer ? staff : customer
 
-      chatRoom.lastMessage = message
+      newMessage.createdAt = new Date()
+      newMessage.updatedAt = new Date()
 
-      chatRoom.messages.push(message)
+      chatRoom.lastMessage = newMessage
+
+      chatRoom.messages.push(newMessage)
       chatRoom.isHaveNew = true
       await chatRoom.save()
 
@@ -37,7 +41,7 @@ export default function createChatMessage(socket: Socket) {
       })
 
       return new SuccessfulResponse(
-        { chatRoomId, message: chatRoom.messages[chatRoom.messages.length - 1] },
+        chatRoom.messages[chatRoom.messages.length - 1],
         200,
         "Chat message created"
       ).fromSocket(socket, SOCKET_SERVER_MESSAGE.CREATE_CHAT_MESSAGE_RESULT)

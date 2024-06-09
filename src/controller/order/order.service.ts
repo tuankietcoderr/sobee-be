@@ -312,7 +312,7 @@ export class OrderService implements OrderRepository {
     limit: number,
     status?: string
   ): Promise<TotalAndData<IOrder>> {
-    console.log({ page, limit })
+    console.log({ page, limit, status })
     const orders = () =>
       Order.find(
         {

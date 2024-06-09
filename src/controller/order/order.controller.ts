@@ -18,7 +18,8 @@ export class OrderController implements IRoute {
     CUSTOMER: "/customer",
     STATUS: "/:id/status",
     CANCEL: "/:id/status/cancel",
-    MOCK: "/mock"
+    MOCK: "/mock",
+    REORDER: "/:id/reorder"
   }
 
   private static readonly orderService = new OrderService()
@@ -51,6 +52,7 @@ export class OrderController implements IRoute {
       asyncHandler(this.updateOrderStatus)
     )
     this.router.delete(this.PATHS.CANCEL, middleware.verifyToken, asyncHandler(this.cancelOrder))
+    this.router.put(this.PATHS.REORDER, middleware.verifyToken, asyncHandler(this.reOrder))
   }
 
   private async addOrderItem(req: Request, res: Response): Promise<void> {
@@ -120,6 +122,11 @@ export class OrderController implements IRoute {
   private async cancelOrder(req: Request, res: Response): Promise<void> {
     const order = await OrderController.orderService.updateOrderStatus(req.params.id, EOrderStatus.CANCELED)
     new SuccessfulResponse(order, HttpStatusCode.OK, "Order canceled successfully").from(res)
+  }
+
+  private async reOrder(req: Request, res: Response): Promise<void> {
+    const order = await OrderController.orderService.updateOrderStatus(req.params.id, EOrderStatus.PENDING)
+    new SuccessfulResponse(order, HttpStatusCode.CREATED, "Order re-created successfully").from(res)
   }
 
   getPath(): string {
