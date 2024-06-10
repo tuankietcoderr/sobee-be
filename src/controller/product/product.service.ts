@@ -1,5 +1,5 @@
 import { ObjectModelNotFoundException, ObjectModelOperationException } from "@/common/exceptions"
-import { generateNameId, getIdFromNameId } from "@/common/utils"
+import { generateNameId, getIdFromNameId, redisClient } from "@/common/utils"
 import { EOrderStatus, EProductType } from "@/enum"
 import { IProduct, IVariant, TotalAndData } from "@/interface"
 import { Order, Product } from "@/models"
@@ -385,19 +385,34 @@ export class ProductService implements ProductRepository {
       .limit(10)
   }
 
-  async getRecommended(): Promise<IProduct[]> {
-    return await Product.find(
+  async getRecommended(productId: string): Promise<IProduct[]> {
+    const processedSlug = getIdFromNameId(productId)
+    let recommends: string[] = []
+    const cachedRecommend = await redisClient.get(`recommendations:${processedSlug}`)
+
+    if (cachedRecommend) {
+      recommends = JSON.parse(cachedRecommend)
+    } else {
+      const recommendRes = await fetch(process.env.RECOMMENDATION_API_URL! + "?input=" + processedSlug, {
+        method: "POST"
+      })
+
+      const recommendData = await recommendRes.json()
+      recommends = recommendData.recommendations
+      await redisClient.set(`recommendations:${processedSlug}`, JSON.stringify(recommends))
+    }
+
+    const products = await Product.find(
       {
-        ratingCount: { $gt: 3 },
-        ratingValue: { $gt: 3 },
-        sold: { $gt: 0 },
-        isDraft: false
+        _id: {
+          $in: recommends
+        }
       },
       {},
       this.generalPopulate
     )
-      .sort({ ratingValue: -1, ratingCount: -1 })
-      .limit(10)
+
+    return products
   }
 
   async getBestSeller(): Promise<IProduct[]> {

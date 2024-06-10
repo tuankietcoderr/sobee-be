@@ -23,7 +23,8 @@ export class ProductController implements IRoute {
     COLOR: "/color",
     CUSTOMER_FAVORITE: "/customer/favorite",
     TOGGLE_FAVORITE: "/:productId/favorite",
-    BY_ORDER: "/by-order"
+    BY_ORDER: "/by-order",
+    RECOMMEND: "/:id/recommend"
   }
 
   private static readonly productService = new ProductService()
@@ -91,6 +92,8 @@ export class ProductController implements IRoute {
       middleware.verifyRoles(ERole.ADMIN, ERole.STAFF),
       asyncHandler(this.getDraftProducts)
     )
+
+    this.router.get(this.PATHS.RECOMMEND, asyncHandler(this.getRecommendProducts))
 
     this.router.get(this.PATHS.POPULAR, asyncHandler(this.getPopularProducts))
 
@@ -214,6 +217,11 @@ export class ProductController implements IRoute {
       limit,
       response.total
     )
+  }
+
+  private async getRecommendProducts(req: Request, res: Response) {
+    const response = await ProductController.productService.getRecommended(req.params.id as string)
+    new SuccessfulResponse(response, HttpStatusCode.OK, "Get recommend products successfully").from(res)
   }
 
   getPath(): string {

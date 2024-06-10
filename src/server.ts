@@ -6,7 +6,7 @@ import httpServer from "./config/http-server"
 import getRoutes from "./routes"
 import io from "./config/socket-server"
 import getSocketRoutes from "./routes/socket"
-import { ErrorResponse, HttpStatusCode, verifyToken } from "./common/utils"
+import { ErrorResponse, HttpStatusCode, redisClient, verifyToken } from "./common/utils"
 import { JwtPayload } from "jsonwebtoken"
 import { IKeyToken, IRole, IStaff, IUser } from "./interface"
 import KeyToken from "./models/KeyToken"
@@ -84,6 +84,7 @@ async function start() {
   const message = await runSocketServer()
   console.log(message)
   await runHttpServer()
+  await redisClient.connect()
   getRoutes(app)
 }
 
