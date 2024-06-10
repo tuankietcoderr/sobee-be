@@ -1,12 +1,12 @@
 class UserSocketList {
   private userSocketList: Map<string, string> = new Map<string, string>()
 
-  private static instance: UserSocketList = new UserSocketList()
+  private static instance: UserSocketList
 
   private constructor() {}
 
   public static getInstance(): UserSocketList {
-    return this.instance
+    return this.instance || (this.instance = new UserSocketList())
   }
 
   public getUserList(): Map<string, string> {

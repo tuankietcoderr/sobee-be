@@ -239,6 +239,8 @@ export class OrderService implements OrderRepository {
 
     const address = await Address.findById(data.shippingAddress)
 
+    console.log({ address })
+
     const orderItems = await OrderItem.find({ customer: data.customer, _id: { $in: data.orderItems } })
 
     const order = new Order({
@@ -320,7 +322,14 @@ export class OrderService implements OrderRepository {
           ...(status ? { status } : {})
         },
         {},
-        {}
+        {
+          populate: [
+            {
+              path: "orderItems.product",
+              select: "thumbnail"
+            }
+          ]
+        }
       )
 
     const total = await orders().countDocuments()
