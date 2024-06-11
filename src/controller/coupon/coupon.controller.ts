@@ -18,7 +18,8 @@ export class CouponController implements IRoute {
     USER: "/user",
     USE: "/:couponId/use",
     VALIDATE: "/validate",
-    TODAY: "/today"
+    TODAY: "/today",
+    CODE: "/code/:code"
   }
 
   private static readonly couponService = new CouponService()
@@ -60,6 +61,7 @@ export class CouponController implements IRoute {
     )
     this.router.get(this.PATHS.ROOT, asyncHandler(this.getCoupons))
     middleware.verifyToken, this.router.get(this.PATHS.USER, middleware.verifyToken, asyncHandler(this.getUserCoupons))
+    this.router.get(this.PATHS.CODE, asyncHandler(this.getCouponByCode))
     this.router.get(this.PATHS.TODAY, middleware.verifyToken, asyncHandler(this.getTodayCoupons))
     this.router.get(this.PATHS.COUPON, asyncHandler(this.getCoupon))
     this.router.put(
@@ -135,6 +137,11 @@ export class CouponController implements IRoute {
 
   private async getTodayCoupons(req: Request, res: Response): Promise<void> {
     const data = await CouponController.couponService.getToday()
+    new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
+  }
+
+  private async getCouponByCode(req: Request, res: Response): Promise<void> {
+    const data = await CouponController.couponService.getByCode(req.params.code)
     new SuccessfulResponse(data, HttpStatusCode.OK).from(res)
   }
 

@@ -159,4 +159,40 @@ export class CouponService implements CouponRepository {
       endDate: { $gte: today }
     })
   }
+
+  async getByCode(code: string): Promise<ICoupon> {
+    const coupon = await Coupon.findOne(
+      { code },
+      {},
+      {
+        populate: {
+          path: "productApply",
+          populate: [
+            {
+              path: "category",
+              select: "name slug"
+            },
+            {
+              path: "variants"
+            },
+            {
+              path: "brand",
+              select: "name logo"
+            },
+            {
+              path: "tax",
+              select: "name rate"
+            },
+            {
+              path: "shippingFee"
+            }
+          ]
+        }
+      }
+    )
+
+    if (!coupon) throw new ObjectModelNotFoundException("Coupon not found")
+
+    return coupon
+  }
 }
