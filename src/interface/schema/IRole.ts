@@ -20,7 +20,7 @@ export interface IGrantListItem {
 export interface IRole {
   _id?: string | Types.ObjectId
   role_name: string
-  role_slug: string
+  // role_slug: string
   grant_lists: IGrantListItem[]
   __v?: number
 }

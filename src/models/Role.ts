@@ -9,10 +9,6 @@ const RoleSchema = new Schema<IRole>({
     unique: true,
     required: true
   },
-  role_slug: {
-    type: String,
-    unique: true
-  },
   grant_lists: [
     {
       resource: {
