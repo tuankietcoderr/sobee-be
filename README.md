@@ -83,8 +83,13 @@ The Sobee project aims to build an e-commerce platform with both web and mobile 
    ```env
    PORT=3000
    MONGO_URI=<your_mongodb_uri>
-   REDIS_URL=<your_redis_url>
    JWT_SECRET=<your_jwt_secret>
+   CLOUDINARY_CLOUD_NAME=<your_cloudinary_cloud_name>
+   CLOUDINARY_API_KEY=<your_cloudinary_api_key>
+   CLOUDINARY_API_SECRET=<your_cloudinary_api_secret>
+   REDIS_PASSWORD=<your_redis_password>
+   REDIS_HOST=<your_redis_host>
+   REDIS_PORT=<your_redis_port>
    ```
 
 4. **Start the server:**
