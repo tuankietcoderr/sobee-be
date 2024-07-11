@@ -40,7 +40,7 @@ The Sobee project aims to build an e-commerce platform with both web and mobile 
 - Add and manage products in the wishlist.
 - View wishlist details.
 
-### Wishlist
+### Reviews
 
 - Submit reviews and ratings for products.
 - Manage and display customer reviews.
