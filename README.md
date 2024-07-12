@@ -28,7 +28,6 @@ The Sobee project aims to build an e-commerce platform with both web and mobile 
 
 - **CRUD Operations for Products**: Administrators can create, read, update, and delete products.
 - **Category Management**: Products can be categorized for better organization and searchability.
-- **Tag Management**: Products can be tagged with relevant keywords to improve search results.
 
 ### Order Management
 
